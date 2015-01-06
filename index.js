@@ -9,14 +9,13 @@ var defaultConfig = {
 
 var defaultBucketConfig = {
   Bucket: '', /* required */
-  ACL: 'public-read'
 }
 
 var defaultWebsiteConfig = {
   Bucket: '', /* required */
   WebsiteConfiguration: { /* required */
     IndexDocument: {
-      Suffix: 'index.html' /* required */
+      Suffix: defaultConfig.index /* required */
     }
   }
 }
@@ -54,40 +53,75 @@ module.exports = function(config, cb) {
   var s3 = new AWS.S3({ region: config.region })
 
   s3.createBucket(bucketConfig, function(err, bucket) {
-    if (err && err.code !== 'BucketAlreadyOwnedByYou') {
-      return cb(err)
-    }
+    if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
 
-    s3.putBucketWebsite(websiteConfig, function(err, website) {
+    setPolicy(s3, config.domain, function(err) {
       if (err) return cb(err)
-
-      s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
-        if (err) return cb(err)
-
-        var host
-
-        // Frankfurt has a slightly differnt URL scheme :(
-        if (config.region === 'eu-central-1') {
-          host = [config.domain, 's3-website', config.region, 'amazonaws.com'].join('.')
-        } else {
-          host = [config.domain, 's3-website-' + config.region, 'amazonaws.com'].join('.')
-        }
-
-        var siteUrl = url.format({
-          protocol: 'http',
-          host: host
-        })
-
-        cb(null, { url: siteUrl, config: website })
-      })
+      createWebsite(s3, websiteConfig, config, cb)
     })
   })
+}
 
-  // var params = {
-  //   Bucket: 'STRING_VALUE' /* required */
-  // };
-  // s3.getBucketWebsite(params, function(err, data) {
-  //   if (err) console.log(err, err.stack); // an error occurred
-  //   else     console.log(data);           // successful response
-  // })
+function createWebsite (s3, websiteConfig, config, cb) {
+  s3.putBucketWebsite(websiteConfig, function(err, website) {
+    if (err) return cb(err)
+
+    s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+      if (err) return cb(err)
+
+      var host
+
+      // Frankfurt has a slightly differnt URL scheme :(
+      if (config.region === 'eu-central-1') {
+        host = [config.domain, 's3-website', config.region, 'amazonaws.com'].join('.')
+      } else {
+        host = [config.domain, 's3-website-' + config.region, 'amazonaws.com'].join('.')
+      }
+
+      var siteUrl = url.format({
+        protocol: 'http',
+        host: host
+      })
+
+      cb(null, { url: siteUrl, config: website })
+    })
+  })
+}
+
+// sets up a public-read bucket policy
+function setPolicy (s3, bucket, cb) {
+  var publicRead = {
+    Sid: 'AddPublicReadPermissions',
+    Effect: 'Allow',
+    Principal: '*',
+    Action: 's3:GetObject',
+    Resource: 'arn:aws:s3:::' + bucket + '/*'
+  }
+
+  s3.getBucketPolicy({ Bucket: bucket }, function(err, data) {
+    if (err && err.code !== 'NoSuchBucketPolicy') return cb(err)
+
+    var policy = {
+      Statement: []
+    }
+
+    try {
+      policy = JSON.parse(data.Policy)
+    } catch (err) {}
+
+    var found = false
+
+    policy.Statement = policy.Statement.map(function(item) {
+      if (item.Sid === 'AddPublicReadPermissions') {
+        found = true
+        return publicRead
+      } else {
+        return item
+      }
+    })
+
+    if (!found) policy.Statement.push(publicRead)
+
+    s3.putBucketPolicy({ Bucket: bucket, Policy: JSON.stringify(policy) }, cb)
+  })
 }

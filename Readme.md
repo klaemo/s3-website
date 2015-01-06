@@ -1,7 +1,8 @@
 ## s3-website
 
 Easily publish static websites to Amazon S3.
-Creates a bucket with the specified name and enables static website hosting on it.
+
+Creates a bucket with the specified name and enables static website hosting on it. Also, sets up a public-read bucket policy.
 
 Your AWS credentials should either be in `~/.aws/credentials` or in the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
@@ -54,7 +55,6 @@ s3site({
 - routing setup
 - TLS via cloudfront
 - www -> non-www redirect (via Route 53 hack)
-- public-read bucket policy
 
 ### License
 ISC
