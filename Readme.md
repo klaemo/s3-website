@@ -31,7 +31,7 @@ $ s3-website -h
 ```
 
 `s3-website -r eu-central-1 cool.website.me` would create a website bucket with the following URL `http://cool.website.me.s3-website.eu-central-1.amazonaws.com`.
-You can then set up a CNAME record for `cool.website.me` pointing at that hostname.
+You can then set up a CNAME record for `cool.website.me` pointing to that hostname.
 
 ### Usage (API)
 
@@ -52,6 +52,9 @@ s3site({
 ### TODO
 
 - routing setup
+- TLS via cloudfront
+- www -> non-www redirect (via Route 53 hack)
+- public-read bucket policy
 
 ### License
 ISC
