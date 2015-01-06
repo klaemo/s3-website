@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 var s3site = require('./')
 var program = require('commander')
 var url = require('url')
