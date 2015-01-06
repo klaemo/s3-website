@@ -1,0 +1,39 @@
+{
+  "name": "s3-website",
+  "version": "1.0.0",
+  "description": "Easily publish static websites on Amazon S3",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/index.js | faucet"
+  },
+  "bin": {
+    "s3-website": "./cli.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/klaemo/s3-website"
+  },
+  "keywords": [
+    "s3",
+    "aws",
+    "amazon",
+    "static",
+    "website"
+  ],
+  "author": "Clemens Stolle <klaemo@fastmail.fm>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/klaemo/s3-website/issues"
+  },
+  "homepage": "https://github.com/klaemo/s3-website",
+  "dependencies": {
+    "aws-sdk": "^2.1.4",
+    "commander": "^2.6.0",
+    "merge-defaults": "^0.2.1"
+  },
+  "devDependencies": {
+    "faucet": "0.0.1",
+    "supertest": "^0.15.0",
+    "tape": "^3.0.3"
+  }
+}
