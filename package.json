@@ -4,7 +4,8 @@
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
   "scripts": {
-    "test": "node test/index.js | faucet"
+    "test": "node test/index.js | faucet",
+    "prepublish": "npm ls && npm test"
   },
   "bin": {
     "s3-website": "./cli.js"
