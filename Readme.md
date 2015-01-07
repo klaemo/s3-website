@@ -28,6 +28,7 @@ $ s3-website -h
     -r, --region <region>  Region [us-east-1]
     -i, --index <index>    Index Document [index.html]
     -e, --error <error>    Error Document
+    --json                 Output JSON
 
 ```
 

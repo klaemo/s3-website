@@ -10,10 +10,15 @@ program
   .option('-r, --region <region>', 'Region [us-east-1]')
   .option('-i, --index <index>', 'Index Document [index.html]')
   .option('-e, --error <error>', 'Error Document')
+  .option('--json', 'Output JSON')
   .parse(process.argv)
 
 if (!program.args.length) {
-  console.error('no domain specified')
+  if (program.json) {
+    console.error(JSON.stringify({ code: 'DomainUndefined', message: 'no domain specified' }))
+  } else {
+    console.error('Error: no domain specified')
+  }
   process.exit(1)
 }
 
@@ -21,10 +26,19 @@ program.domain = program.args[0]
 
 s3site(program, function(err, website) {
   if (err) {
-    console.error(err.message)
+    if (program.json) {
+      console.error(JSON.stringify({ code: err.code, message: err.message }))
+    } else {
+      console.error('Error:', err.message)
+    }
     process.exit(1)
   }
-  console.log('Successfully created your website.\n')
-  console.log('URL:\n  ' + website.url + '\n')
-  console.log('DNS:\n  ' + program.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+
+  if (program.json) {
+    console.log(JSON.stringify(website))
+  } else {
+    console.log('Successfully created your website.\n')
+    console.log('URL:\n  ' + website.url + '\n')
+    console.log('DNS:\n  ' + program.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+  }
 })
