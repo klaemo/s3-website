@@ -7,10 +7,15 @@ var url = require('url')
 program
   .version(require('./package.json').version)
   .usage('[options] domain')
-  .option('-r, --region <region>', 'Region [us-east-1]')
-  .option('-i, --index <index>', 'Index Document [index.html]')
-  .option('-e, --error <error>', 'Error Document')
-  .option('--json', 'Output JSON')
+  .option('-r, --region <region>', 'Region [us-east-1].')
+  .option('-i, --index <index>', 'Index Document [index.html].')
+  .option('-e, --error <error>', 'Error Document.')
+  .option('--json', 'Output JSON.')
+  .option('--cert-id <IAM ServerCertId>', 'The ID of your cert in IAM.')
+  .option('-c, --cert <cert>', 'Path to the public key certificate.')
+  .option('-k, --key <key>', 'Path to the private key.')
+  .option('-n, --cert-name <certificate name>', 'A unique name for the server certificate.')
+  .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .parse(process.argv)
 
 if (!program.args.length) {
@@ -40,5 +45,8 @@ s3site(program, function(err, website) {
     console.log('Successfully created your website.\n')
     console.log('URL:\n  ' + website.url + '\n')
     console.log('DNS:\n  ' + program.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+    if (website.certId) {
+      console.log('Certificate ID:\n  ' + website.certId + '\n')
+    }
   }
 })

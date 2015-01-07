@@ -2,6 +2,7 @@ var AWS = require('aws-sdk')
 var defaults = require('merge-defaults')
 var assert = require('assert')
 var url = require('url')
+var cloudfront = require('cloudfront-tls')
 
 var defaultConfig = {
   index: 'index.html'
@@ -57,7 +58,25 @@ module.exports = function(config, cb) {
 
     setPolicy(s3, config.domain, function(err) {
       if (err) return cb(err)
-      createWebsite(s3, websiteConfig, config, cb)
+      createWebsite(s3, websiteConfig, config, function(err, website) {
+        if (err) return cb(err)
+
+        if (config.cert || config.certId) {
+          config.aliases = config.aliases || [ config.domain ]
+          config.origin = url.parse(website.url).host
+
+          cloudfront(config, function(err, distribution) {
+            if (err) return cb(err)
+
+            website.url = 'http://' + distribution.url
+            website.certId = distribution.certId
+            website.cloudfront = distribution.distribution
+            cb(null, website)
+          })
+        } else {
+          cb(null, website)
+        }
+      })
     })
   })
 }
