@@ -41,7 +41,7 @@ All the options are optional ;-).
 `s3-website -r eu-central-1 cool.website.me` creates a website bucket with the following URL `http://cool.website.me.s3-website.eu-central-1.amazonaws.com`.
 You can then set up a CNAME record for `cool.website.me` pointing to that hostname.
 
-For the TLS related options take a look at the [cloudfront-tls](klaemo/cloudfront-tls) readme.
+For the TLS related options take a look at the [cloudfront-tls](https://github.com/klaemo/cloudfront-tls) readme.
 
 ### Usage (API)
 
@@ -59,7 +59,7 @@ s3site({
 })
 ```
 
-You can also pass in the same the TLS related options as in [cloudfront-tls](klaemo/cloudfront-tls). So you might want to take a look at its readme if you want to use your own certificates.
+You can also pass in the same the TLS related options as in [cloudfront-tls](https://github.com/klaemo/cloudfront-tls). So you might want to take a look at its readme if you want to use your own certificates.
 
 ### TODO
 
