@@ -5,7 +5,15 @@ var AWS = require('aws-sdk')
 
 var config = {
   region: 'eu-central-1',
-  domain: 's3-website-test-' + Math.ceil(Math.random() * 10)
+  domain: 's3-website-test-' + Math.ceil(Math.random() * 10),
+  routes: [{
+    Condition: {
+        KeyPrefixEquals: 'foo/'
+    },
+    Redirect: {
+        HostName: 'example.com'
+    }
+  }]
 }
 
 test('create website', function(t) {

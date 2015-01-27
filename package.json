@@ -31,7 +31,9 @@
     "aws-sdk": "^2.1.4",
     "cloudfront-tls": "^1.0.0",
     "commander": "^2.6.0",
-    "merge-defaults": "^0.2.1"
+    "deep-diff": "^0.3.0",
+    "merge-defaults": "^0.2.1",
+    "object-assign": "^2.0.0"
   },
   "devDependencies": {
     "faucet": "0.0.1",
