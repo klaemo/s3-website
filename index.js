@@ -3,6 +3,8 @@ var defaults = require('merge-defaults')
 var assert = require('assert')
 var url = require('url')
 var cloudfront = require('cloudfront-tls')
+var diff = require('deep-diff').diff
+var assign = require('object-assign')
 
 var defaultConfig = {
   index: 'index.html'
@@ -17,7 +19,8 @@ var defaultWebsiteConfig = {
   WebsiteConfiguration: { /* required */
     IndexDocument: {
       Suffix: defaultConfig.index /* required */
-    }
+    },
+    RoutingRules: []
   }
 }
 
@@ -51,6 +54,11 @@ module.exports = function(config, cb) {
     websiteConfig.WebsiteConfiguration.ErrorDocument = { Key: config.error }
   }
 
+  if (config.routes) {
+    assert(config.routes.constructor === Array)
+    websiteConfig.WebsiteConfiguration.RoutingRules = config.routes
+  }
+
   var s3 = new AWS.S3({ region: config.region })
 
   s3.createBucket(bucketConfig, function(err, bucket) {
@@ -82,12 +90,8 @@ module.exports = function(config, cb) {
 }
 
 function createWebsite (s3, websiteConfig, config, cb) {
-  s3.putBucketWebsite(websiteConfig, function(err, website) {
-    if (err) return cb(err)
 
-    s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
-      if (err) return cb(err)
-
+  function parseWebsite(website) {
       var host
 
       // Frankfurt has a slightly differnt URL scheme :(
@@ -102,8 +106,30 @@ function createWebsite (s3, websiteConfig, config, cb) {
         host: host
       })
 
-      cb(null, { url: siteUrl, config: website })
+      return {
+        url: siteUrl,
+        config: website
+      }
+  }
+
+  function putWebsite() {
+    s3.putBucketWebsite(websiteConfig, function(err, website) {
+      if (err) return cb(err)
+
+      s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+        if (err) return cb(err)
+        cb(null, parseWebsite(website))
+      })
     })
+  }
+
+  s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+      var dirty = diff(website || {}, websiteConfig.WebsiteConfiguration)
+      if (dirty) {
+        putWebsite()
+      } else {
+        cb(null, parseWebsite(website))
+      }
   })
 }
 
@@ -120,27 +146,40 @@ function setPolicy (s3, bucket, cb) {
   s3.getBucketPolicy({ Bucket: bucket }, function(err, data) {
     if (err && err.code !== 'NoSuchBucketPolicy') return cb(err)
 
-    var policy = {
+    var newPolicy = {
       Statement: []
     }
 
+    var oPolicy
+
     try {
-      policy = JSON.parse(data.Policy)
+      oPolicy = JSON.parse(data.Policy)
     } catch (err) {}
 
     var found = false
 
-    policy.Statement = policy.Statement.map(function(item) {
-      if (item.Sid === 'AddPublicReadPermissions') {
-        found = true
-        return publicRead
-      } else {
-        return item
-      }
+    if (oPolicy) {
+      newPolicy.Statement = oPolicy.Statement.map(function(item) {
+        if (item.Sid === 'AddPublicReadPermissions') {
+          found = true
+          return publicRead
+        } else {
+          return item
+        }
+      })
+    }
+
+    if (!found) newPolicy.Statement.push(publicRead)
+
+    var dirty = diff(oPolicy || {}, newPolicy, function(path, key) {
+      if (key === 'Version') return true
     })
 
-    if (!found) policy.Statement.push(publicRead)
-
-    s3.putBucketPolicy({ Bucket: bucket, Policy: JSON.stringify(policy) }, cb)
+    if (dirty) {
+      var policy = assign(oPolicy || {}, newPolicy)
+      s3.putBucketPolicy({ Bucket: bucket, Policy: JSON.stringify(policy) }, cb)
+    } else {
+      cb()
+    }
   })
 }
