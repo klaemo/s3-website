@@ -93,7 +93,7 @@ module.exports = function(config, cb) {
 
 function createWebsite (s3, websiteConfig, config, cb) {
 
-  function parseWebsite(website) {
+  function parseWebsite(website, modified) {
       var host
 
       // Frankfurt has a slightly differnt URL scheme :(
@@ -110,7 +110,8 @@ function createWebsite (s3, websiteConfig, config, cb) {
 
       return {
         url: siteUrl,
-        config: website
+        config: website,
+        modified: modified ? true : false
       }
   }
 
@@ -120,7 +121,7 @@ function createWebsite (s3, websiteConfig, config, cb) {
 
       s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
         if (err) return cb(err)
-        cb(null, parseWebsite(website))
+        cb(null, parseWebsite(website, true))
       })
     })
   }
