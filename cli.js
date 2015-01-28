@@ -10,6 +10,7 @@ program
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-i, --index <index>', 'Index Document [index.html].')
   .option('-e, --error <error>', 'Error Document.')
+  .option('-t, --routes <routes>', 'Routing rules.')
   .option('--json', 'Output JSON.')
   .option('--cert-id <IAM ServerCertId>', 'The ID of your cert in IAM.')
   .option('-c, --cert <cert>', 'Path to the public key certificate.')

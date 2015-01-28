@@ -1,6 +1,9 @@
 var AWS = require('aws-sdk')
 var defaults = require('merge-defaults')
 var assert = require('assert')
+var util = require('util')
+var fs = require('fs')
+var path = require('path')
 var url = require('url')
 var cloudfront = require('cloudfront-tls')
 var diff = require('deep-diff').diff
@@ -55,8 +58,7 @@ module.exports = function(config, cb) {
   }
 
   if (config.routes) {
-    assert(config.routes.constructor === Array)
-    websiteConfig.WebsiteConfiguration.RoutingRules = config.routes
+    websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
   var s3 = new AWS.S3({ region: config.region })
@@ -181,5 +183,50 @@ function setPolicy (s3, bucket, cb) {
     } else {
       cb()
     }
+  })
+}
+
+function loadRoutes(routesOrFile) {
+  var routes
+  if (typeof routesOrFile === 'string') {
+    routes = require(path.resolve(__dirname, routesOrFile))
+  } else {
+    routes = routesOrFile
+  }
+
+  validateRoutes(routes)
+  return routes
+}
+
+function validateRoutes(routes) {
+  assert(routes.constructor === Array)
+
+  var validProperties = {
+    Condition: {
+      HttpErrorCodeReturnedEquals: true,
+      KeyPrefixEquals: true
+    },
+    Redirect: {
+      HostName: true,
+      Protocol: true,
+      ReplaceKeyPrefixWith: true,
+      ReplaceKeyWith: true,
+      HttpRedirectCode: true
+    }
+  }
+
+  routes.forEach(function (route, idx) {
+
+    function validProps(obj, props) {
+      var keys = Object.keys(obj);
+      assert(keys.length > 0, util.format('Invalid route at index %s', idx))
+      keys.forEach(function (key) {
+        assert(props[key], util.format('Invalid route property %s at index %s', key, idx))
+      })
+    }
+
+    validProps(route, validProperties);
+    validProps(route.Condition, validProperties.Condition);
+    validProps(route.Redirect, validProperties.Redirect);
   })
 }
