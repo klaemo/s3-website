@@ -90,5 +90,9 @@ array of rules to the API with the `routes` option.
 
 - www -> non-www redirect (via Route 53 hack)
 
+### Contributors
+
+- [mshick](https://github.com/mshick)
+
 ### License
 ISC
