@@ -1,8 +1,13 @@
 var AWS = require('aws-sdk')
 var defaults = require('merge-defaults')
 var assert = require('assert')
+var util = require('util')
+var fs = require('fs')
+var path = require('path')
 var url = require('url')
 var cloudfront = require('cloudfront-tls')
+var diff = require('deep-diff').diff
+var assign = require('object-assign')
 
 var defaultConfig = {
   index: 'index.html'
@@ -17,7 +22,8 @@ var defaultWebsiteConfig = {
   WebsiteConfiguration: { /* required */
     IndexDocument: {
       Suffix: defaultConfig.index /* required */
-    }
+    },
+    RoutingRules: []
   }
 }
 
@@ -51,6 +57,10 @@ module.exports = function(config, cb) {
     websiteConfig.WebsiteConfiguration.ErrorDocument = { Key: config.error }
   }
 
+  if (config.routes) {
+    websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
+  }
+
   var s3 = new AWS.S3({ region: config.region })
 
   s3.createBucket(bucketConfig, function(err, bucket) {
@@ -82,12 +92,8 @@ module.exports = function(config, cb) {
 }
 
 function createWebsite (s3, websiteConfig, config, cb) {
-  s3.putBucketWebsite(websiteConfig, function(err, website) {
-    if (err) return cb(err)
 
-    s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
-      if (err) return cb(err)
-
+  function parseWebsite(website, modified) {
       var host
 
       // Frankfurt has a slightly differnt URL scheme :(
@@ -102,8 +108,31 @@ function createWebsite (s3, websiteConfig, config, cb) {
         host: host
       })
 
-      cb(null, { url: siteUrl, config: website })
+      return {
+        url: siteUrl,
+        config: website,
+        modified: modified ? true : false
+      }
+  }
+
+  function putWebsite() {
+    s3.putBucketWebsite(websiteConfig, function(err, website) {
+      if (err) return cb(err)
+
+      s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+        if (err) return cb(err)
+        cb(null, parseWebsite(website, true))
+      })
     })
+  }
+
+  s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+      var dirty = diff(website || {}, websiteConfig.WebsiteConfiguration)
+      if (dirty) {
+        putWebsite()
+      } else {
+        cb(null, parseWebsite(website))
+      }
   })
 }
 
@@ -120,27 +149,85 @@ function setPolicy (s3, bucket, cb) {
   s3.getBucketPolicy({ Bucket: bucket }, function(err, data) {
     if (err && err.code !== 'NoSuchBucketPolicy') return cb(err)
 
-    var policy = {
+    var newPolicy = {
       Statement: []
     }
 
+    var oPolicy
+
     try {
-      policy = JSON.parse(data.Policy)
+      oPolicy = JSON.parse(data.Policy)
     } catch (err) {}
 
     var found = false
 
-    policy.Statement = policy.Statement.map(function(item) {
-      if (item.Sid === 'AddPublicReadPermissions') {
-        found = true
-        return publicRead
-      } else {
-        return item
-      }
+    if (oPolicy) {
+      newPolicy.Statement = oPolicy.Statement.map(function(item) {
+        if (item.Sid === 'AddPublicReadPermissions') {
+          found = true
+          return publicRead
+        } else {
+          return item
+        }
+      })
+    }
+
+    if (!found) newPolicy.Statement.push(publicRead)
+
+    var dirty = diff(oPolicy || {}, newPolicy, function(path, key) {
+      if (key === 'Version') return true
     })
 
-    if (!found) policy.Statement.push(publicRead)
+    if (dirty) {
+      var policy = assign(oPolicy || {}, newPolicy)
+      s3.putBucketPolicy({ Bucket: bucket, Policy: JSON.stringify(policy) }, cb)
+    } else {
+      cb()
+    }
+  })
+}
 
-    s3.putBucketPolicy({ Bucket: bucket, Policy: JSON.stringify(policy) }, cb)
+function loadRoutes(routesOrFile) {
+  var routes
+  if (typeof routesOrFile === 'string') {
+    routes = require(path.resolve(__dirname, routesOrFile))
+  } else {
+    routes = routesOrFile
+  }
+
+  validateRoutes(routes)
+  return routes
+}
+
+function validateRoutes(routes) {
+  assert(Array.isArray(routes), 'Routes must be an array')
+
+  var validProperties = {
+    Condition: {
+      HttpErrorCodeReturnedEquals: true,
+      KeyPrefixEquals: true
+    },
+    Redirect: {
+      HostName: true,
+      Protocol: true,
+      ReplaceKeyPrefixWith: true,
+      ReplaceKeyWith: true,
+      HttpRedirectCode: true
+    }
+  }
+
+  routes.forEach(function (route, idx) {
+
+    function validProps(obj, props) {
+      var keys = Object.keys(obj);
+      assert(keys.length > 0, util.format('Invalid route at index %s', idx))
+      keys.forEach(function (key) {
+        assert(props[key], util.format('Invalid route property %s at index %s', key, idx))
+      })
+    }
+
+    validProps(route, validProperties);
+    validProps(route.Condition, validProperties.Condition);
+    validProps(route.Redirect, validProperties.Redirect);
   })
 }
