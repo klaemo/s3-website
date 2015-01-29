@@ -200,7 +200,7 @@ function loadRoutes(routesOrFile) {
 }
 
 function validateRoutes(routes) {
-  assert(routes.constructor === Array)
+  assert(Array.isArray(routes), 'Routes must be an array')
 
   var validProperties = {
     Condition: {
