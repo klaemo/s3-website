@@ -21,8 +21,7 @@ var defaultWebsiteConfig = {
   WebsiteConfiguration: { /* required */
     IndexDocument: {
       Suffix: defaultConfig.index /* required */
-    },
-    RoutingRules: []
+    }
   }
 }
 
