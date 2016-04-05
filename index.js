@@ -47,15 +47,21 @@ module.exports = function(config, cb) {
     config.region = 'us-east-1'
   }
 
-  if (config.index) {
+  if (config.redirectall) {
+    websiteConfig.WebsiteConfiguration = {
+	RedirectAllRequestsTo: { HostName: config.redirectall }
+    }
+  }
+
+  if (config.index && !config.redirectall) {
     websiteConfig.WebsiteConfiguration.IndexDocument.Suffix = config.index
   }
 
-  if (config.error) {
+  if (config.error && !config.redirectall) {
     websiteConfig.WebsiteConfiguration.ErrorDocument = { Key: config.error }
   }
 
-  if (config.routes) {
+  if (config.routes && !config.redirectall) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 

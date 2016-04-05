@@ -5,7 +5,7 @@ var AWS = require('aws-sdk')
 
 var config = {
   region: 'eu-central-1',
-  domain: 's3-website-test-' + Math.ceil(Math.random() * 10),
+  domain: 's3-website-test-' + Math.random().toString(16).slice(2),
   routes: [{
     Condition: {
         KeyPrefixEquals: 'foo/'
@@ -43,6 +43,36 @@ test('create website', function(t) {
         .end(t.end)
     })
   })
+})
+
+test('create www redirect', function(t) {
+    var subdomain = 'www.' + config.domain;
+    var destination = 'http://' + config.domain + '/';
+
+    s3site({
+	region: config.region,
+	domain: subdomain,
+	redirectall: config.domain
+    }, function(err, website) {
+	if (err) cleanup(subdomain)
+	t.error(err, 'redirect configured')
+	t.equal(website.config.RedirectAllRequestsTo.HostName, config.domain)
+
+	//check if redirect works
+	console.log(website);
+	supertest(website.url).get('/')
+	    .expect(301)
+	    .expect('content-length', 0)
+	    .expect('location', destination)
+	    .end(function(err, res) {
+		if (err) cleanup(subdomain);
+		t.error(err, 'redirect working')
+		cleanup(subdomain, function() {
+		    t.pass('deleted ' + subdomain)
+		    t.end()
+		})
+	    })
+    })
 })
 
 test('update website', function(t) {
