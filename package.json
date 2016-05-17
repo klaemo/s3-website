@@ -1,6 +1,6 @@
 {
   "name": "s3-website",
-  "version": "1.4.1",
+  "version": "1.5.0",
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
   "scripts": {
