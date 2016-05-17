@@ -86,13 +86,26 @@ a file that can be loaded via `require`, that is to say, a `.js` or `.json` file
 should export an array of rules that conform to the [S3 Routing Rules syntax](http://docs.aws.amazon.com/AmazonS3/latest/dev/HowDoIWebsiteConfiguration.html#configure-bucket-as-website-routing-rule-syntax). Likewise, you can provide an
 array of rules to the API with the `routes` option.
 
-### TODO
+### Redirecting All Requests
+To redirect all requests to another domain eg: www -> non www
+You can use the rederectall option. NOTE: index, error, and routing rules are not needed when redirecting all requests to another domain.
+```javascript
+var s3site = require('s3-website')
 
-- www -> non-www redirect (via Route 53 hack)
+s3site({
+  domain: 'www.site.me', // required, will be the bucket name
+  region: 'eu-central-1', // optional, default: us-east-1
+  redirectall: 'site.me'
+}, function(err, website) {
+  if (err) throw err
+  console.log(website)
+})
+```
 
 ### Contributors
 
 - [mshick](https://github.com/mshick)
+- [rgruesbeck](https://github.com/rgruesbeck)
 
 ### License
 ISC
