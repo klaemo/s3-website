@@ -90,12 +90,14 @@ module.exports = function(config, cb) {
             website.cloudfront = distribution.distribution
 
             if(config.uploadDir){
+              debugger;
               return putWebsiteContent(s3, config, function(err){cb(err, website);})
             }
             cb(null, website)
           })
         } else {
           if(config.uploadDir){
+            debugger;
             return putWebsiteContent(s3, config, function(err){cb(err, website);})
           }
           cb(null, website)
@@ -250,7 +252,12 @@ function putWebsiteContent(s3, config, cb){
   glob(pattern, options, function(err, files){
     if(err){return cb(err)}
 
+    var uploaded = 0;
+    var to_upload = files.filter(function(item){
+      return fs.statSync(item).isFile()}).length;
+
     files.forEach(function(file){
+
       fs.stat(file, function(err, stat){
         if(err){return cb(err)}
         if(stat.isFile()){
@@ -263,17 +270,13 @@ function putWebsiteContent(s3, config, cb){
           }
 
           s3.putObject(params, function(err, data){
-            if(err){console.log(err);}
+            if(err){console.log(err); return cb(err);}
             else(console.log("Uploaded: " + params["Key"]))
+            uploaded++;
+            if(uploaded == to_upload){cb(null, files)}
           });
         }
       });
     });
-
-    cb(null, files);
   });
 }
-
-// var s3 = new AWS.S3({ region:"us-east-1" });
-// putWebsiteContent(s3, {domain:"test.upload.page"})
-// s3site({domain:"test.upload.page", uploadDir:"build"});
