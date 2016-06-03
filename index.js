@@ -7,6 +7,9 @@ var url = require('url')
 var cloudfront = require('cloudfront-tls')
 var diff = require('deep-diff').diff
 var assign = require('object-assign')
+var fs = require('fs')
+var glob = require('glob')
+var mime = require('mime')
 
 var defaultConfig = {
   index: 'index.html'
@@ -85,9 +88,16 @@ module.exports = function(config, cb) {
             website.url = 'http://' + distribution.url
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
+
+            if(config.uploadDir){
+              return putWebsiteContent(s3, config, function(err){cb(err, website);})
+            }
             cb(null, website)
           })
         } else {
+          if(config.uploadDir){
+            return putWebsiteContent(s3, config, function(err){cb(err, website);})
+          }
           cb(null, website)
         }
       })
@@ -230,3 +240,40 @@ function validateProps(obj, props, idx) {
     assert(props[key], util.format('Invalid route property %s at index %s', key, idx))
   })
 }
+
+function putWebsiteContent(s3, config, cb){
+  if(typeof cb !== "function"){cb = function(){}}
+
+  var options = {};
+  var pattern = (config.uploadDir || '.') + "/**/*";
+
+  glob(pattern, options, function(err, files){
+    if(err){return cb(err)}
+
+    files.forEach(function(file){
+      fs.stat(file, function(err, stat){
+        if(err){return cb(err)}
+        if(stat.isFile()){
+
+          var params = {
+            Bucket: config.domain,
+            Key: path.relative(config.uploadDir, file),
+            Body: fs.createReadStream(file),
+            ContentType: mime.lookup(file)
+          }
+
+          s3.putObject(params, function(err, data){
+            if(err){console.log(err);}
+            else(console.log("Uploaded: " + params["Key"]))
+          });
+        }
+      });
+    });
+
+    cb(null, files);
+  });
+}
+
+// var s3 = new AWS.S3({ region:"us-east-1" });
+// putWebsiteContent(s3, {domain:"test.upload.page"})
+// s3site({domain:"test.upload.page", uploadDir:"build"});
