@@ -89,15 +89,24 @@ function s3site(config, cb) {
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
 
+            writeConfig(config, function(err){
+              if(err) return console.error("Error:" + err.message)
+              console.log("Wrote config file: .s3-website.json")
+            })
+
             if(config.uploadDir){
-              debugger;
               return putWebsiteContent(s3, config, function(err){cb(err, website);})
             }
             cb(null, website)
           })
         } else {
+
+          writeConfig(config, function(err){
+              if(err) return console.error("Error:" + err.message)
+              console.log("Wrote config file: .s3-website.json")
+          })
+
           if(config.uploadDir){
-            debugger;
             return putWebsiteContent(s3, config, function(err){cb(err, website);})
           }
           cb(null, website)
@@ -243,6 +252,24 @@ function validateProps(obj, props, idx) {
   })
 }
 
+function writeConfig(config, cb){
+  if(typeof cb !== "function"){cb = function(){}}
+  settings = {}
+  if(config.domain) settings['domain'] = config.domain
+  if(config.region) settings['region'] = config.region
+  if(config.uploadDir) settings['uploadDir'] = config.uploadDir
+
+  fs.writeFile(".s3-website.json", JSON.stringify(settings), cb);
+}
+
+function getConfig(path, cb){
+  fs.readFile(path, function(err, data){
+    try{data = JSON.parse(data);}
+    catch(e){}
+    cb(err, data);
+  });
+}
+
 function putWebsiteContent(s3, config, cb){
   if(typeof cb !== "function"){cb = function(){}}
 
@@ -281,12 +308,6 @@ function putWebsiteContent(s3, config, cb){
   });
 }
 
-function getConfig(path, cb){
-  fs.readFile(path, function(err, data){
-    if(data) data = JSON.parse(data);
-    cb(err, data);
-  });
-}
 
 module.exports = {
   s3site:s3site,

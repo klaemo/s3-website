@@ -10,12 +10,12 @@ var deploy = s3Website.deploy;
 var getConfig = s3Website.config;
 
 program
-  .usage('To see more information about any command: \n s3-website command -h')
+  .usage('To see more information about any command: \n    s3-website command -h')
   .version(require('./package.json').version)
 
 program
-  .command('*')
-  .usage('s3-website [options] domain')
+  .command('create <domain>')
+  .usage('s3-website domain [options]')
   .description('Will create and configure an s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-i, --index <index>', 'Index Document [index.html].')
@@ -28,34 +28,23 @@ program
   .option('-n, --cert-name <certificate name>', 'A unique name for the server certificate.')
   .option('-u, --upload-dir <upload directory>', 'Upload contents of directory to s3 site.')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
-  .action(function(args, options){
-    if (!program.args.length) {
-      if (program.json) {
-        console.error(JSON.stringify({ code: 'DomainUndefined', message: 'no domain specified' }))
-      } else {
-        console.error('Error: no domain specified')
-      }
-      process.exit(1)
-    }
-
-    program.domain = program.args[0]
-
-    s3site(program, function(err, website) {
+  .action(function(domain, options){
+    options.domain = domain
+    s3site(options, function(err, website) {
       if (err) {
-        if (program.json) {
+        if (options.json) {
           console.error(JSON.stringify({ code: err.code, message: err.message }))
         } else {
           console.error('Error:', err.message)
         }
         process.exit(1)
       }
-
-      if (program.json) {
+      if (options.json) {
         console.log(JSON.stringify(website))
       } else {
         console.log('Successfully created your website.\n')
         console.log('URL:\n  ' + website.url + '\n')
-        console.log('DNS:\n  ' + program.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+        console.log('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
         if (website.certId) {
           console.log('Certificate ID:\n  ' + website.certId + '\n')
         }
@@ -70,7 +59,7 @@ program
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
   .action(function(uploadDir, options){
-    getConfig('.config.json', function(err, config){
+    getConfig('.s3-website.json', function(err, config){
       if(!config) config = {};
       if(options.region) config.region = options.region;
       if(options.domain) config.domain = options.domain;
@@ -79,6 +68,7 @@ program
       var s3 = new AWS.S3({ region: config.region })
       deploy(s3, config, function(err, files){
         if(err){
+          console.error(e.message)
           program.outputHelp()
           process.exit(1)
         }
@@ -96,9 +86,10 @@ program
     console.log("These can be supplied as command line arguments, or in a json config file")
     console.log(' ')
     console.log("Config file: ")
-    console.log("Should be titled .config.json")
+    console.log("Should be titled .s3-website.json")
     console.log("should contain only a JSON object with keys: region, domain, uploadDir")
   });
 
 
 program.parse(process.argv)
+if(!program.args.length) program.outputHelp()
