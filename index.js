@@ -28,7 +28,7 @@ var defaultWebsiteConfig = {
   }
 }
 
-module.exports = function(config, cb) {
+function s3site(config, cb) {
   if (typeof cb !== 'function') cb = function () {}
 
   assert(typeof config === 'object')
@@ -280,3 +280,8 @@ function putWebsiteContent(s3, config, cb){
     });
   });
 }
+
+module.exports = {
+  s3site:s3site,
+  deploy:putWebsiteContent
+};
