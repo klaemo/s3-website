@@ -1,6 +1,6 @@
 var test = require('tape')
 var supertest = require('supertest')
-var s3site = require('../')
+var s3site = require('../').s3site 
 var AWS = require('aws-sdk')
 
 var config = {
@@ -50,10 +50,9 @@ test('upload content', function(t){
   var s3 = new AWS.S3({ region: config.region })
   config.uploadDir = './test/fixtures';
   config.index = 'test-upload.html'
-  debugger;
+
   //Check if content from upload directory exists
   s3site(config, function(err, website){
-    debugger;
     if(err) cleanup(config.domain)
     t.error(err, 'website uploaded')
     supertest(website.url).get('/test-upload.html')
