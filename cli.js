@@ -7,13 +7,16 @@ var url = require('url')
 
 var s3site = s3Website.s3site;
 var deploy = s3Website.deploy;
+var getConfig = s3Website.config;
 
 program
+  .usage('To see more information about any command: \n s3-website command -h')
   .version(require('./package.json').version)
-  .usage('[options] domain')
 
 program
   .command('*')
+  .usage('s3-website [options] domain')
+  .description('Will create and configure an s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-i, --index <index>', 'Index Document [index.html].')
   .option('-e, --error <error>', 'Error Document.')
@@ -58,21 +61,43 @@ program
         }
       }
     })
-    console.log(program.args)
   })
 
 program
   .command('deploy <upload-dir>')
-  .action(function(dir, options){
-    var config = {
-      region: 'us-east-1',
-      domain: 'test.upload.page',
-      uploadDir: 'build'
-    }
-    var s3 = new AWS.S3({ region: config.region })
-    deploy(s3, config, function(err, files){
-      if(err) console.log(err);
+  .usage('s3-website deploy <dir> [options]')
+  .description('Will push contents of directory to specified s3 website')
+  .option('-r, --region <region>', 'Region [us-east-1].')
+  .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
+  .action(function(uploadDir, options){
+    getConfig('.config.json', function(err, config){
+      if(!config) config = {};
+      if(options.region) config.region = options.region;
+      if(options.domain) config.domain = options.domain;
+      if(uploadDir) config.uploadDir = uploadDir
+
+      var s3 = new AWS.S3({ region: config.region })
+      deploy(s3, config, function(err, files){
+        if(err){
+          program.outputHelp()
+          process.exit(1)
+        }
+      })
     })
+  })
+  .on('--help', function(){
+    console.log(' ')
+    console.log("Deploy requires 3 things: ")
+    console.log("region: the region where your bucket lives, can be set by commandline flag or in config file")
+    console.log("domain: the name of your bucket, can be set by commandline flag or in config file")
+    console.log("uploadDir: the name of the directory whose contents you want to upload," +
+      "can be supplied as first argument to deploy or in config file")
+    console.log(' ')
+    console.log("These can be supplied as command line arguments, or in a json config file")
+    console.log(' ')
+    console.log("Config file: ")
+    console.log("Should be titled .config.json")
+    console.log("should contain only a JSON object with keys: region, domain, uploadDir")
   });
 
 

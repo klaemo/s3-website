@@ -270,7 +270,7 @@ function putWebsiteContent(s3, config, cb){
           }
 
           s3.putObject(params, function(err, data){
-            if(err){console.log(err); return cb(err);}
+            if(err){return cb(err);}
             else(console.log("Uploaded: " + params["Key"]))
             uploaded++;
             if(uploaded == to_upload){cb(null, files)}
@@ -281,7 +281,15 @@ function putWebsiteContent(s3, config, cb){
   });
 }
 
+function getConfig(path, cb){
+  fs.readFile(path, function(err, data){
+    if(data) data = JSON.parse(data);
+    cb(err, data);
+  });
+}
+
 module.exports = {
   s3site:s3site,
-  deploy:putWebsiteContent
+  deploy:putWebsiteContent,
+  config:getConfig
 };
