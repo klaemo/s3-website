@@ -1,3 +1,4 @@
+require('dotenv').config(); 
 var AWS = require('aws-sdk')
 var defaults = require('merge-defaults')
 var assert = require('assert')
