@@ -20,34 +20,34 @@ Because of limitations of the S3 API, any changes made to the website policy or
 configuration in the S3 web interface, or elsewhere, will be overwritten by the
 settings provided to `s3-website`.
 
-<!-- ### Installation -->
+### Installation
 
-<!-- `s3-website` is a [node.js](http://nodejs.org) program/module.
+`s3-website` is a [node.js](http://nodejs.org) program/module.
 
 ```
 npm install -g s3-website
-``` -->
+```
 
 
 ### Usage (CLI)
 
 ```
 
-  $ node cli.js -h
+  $ s3-website -h
   Commands:
 
     create [options] <domain>      Will create and configure an s3 website
     deploy [options] <upload-dir>  Will push contents of directory to specified s3 website
 ```
-To see options for each command  `node cli.js command -h`
+To see options for each command  `s3-website command -h`
 
 #### Create
-  Usage `node cli.js create <desired.bucket.name> [options]`
+  Usage `s3-website create <desired.bucket.name> [options]`
   * Will create a new bucket with desired name
   * Will configure bucket for static hosting
 
 #### Deploy
-  Usage `node cli.js deploy <directory-to-upload> [options]`
+  Usage `s3-website deploy <directory-to-upload> [options]`
   * Will upload all contents of directory to bucket, replacing existing files
 
 All the options are optional ;-).
