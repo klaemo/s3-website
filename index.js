@@ -1,4 +1,3 @@
-require('dotenv').config(); 
 var AWS = require('aws-sdk')
 var defaults = require('merge-defaults')
 var assert = require('assert')
@@ -11,6 +10,7 @@ var assign = require('object-assign')
 var fs = require('fs')
 var glob = require('glob')
 var mime = require('mime')
+var dotenv = require('dotenv').config({silent:true});
 
 var defaultConfig = {
   index: 'index.html'
