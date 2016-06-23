@@ -49,6 +49,10 @@ To see options for each command  `s3-website command -h`
 #### Deploy
   Usage `s3-website deploy <directory-to-upload> [options]`
   * Will upload all contents of directory to bucket, replacing existing files
+  * Bucket can be specified by providing command line argument -d, or --domain
+    followed by the name of the s3 bucket. If no option is provided s3-website
+    will look for config file written when bucket is created.
+
 
 All the options are optional ;-).
 
@@ -110,7 +114,7 @@ s3site({
 
 - [mshick](https://github.com/mshick)
 - [rgruesbeck](https://github.com/rgruesbeck)
-- [nick-benoit14](https://github.com/rgruesbeck)
+- [nick-benoit14](https://github.com/nick-benoit14)
 
 ### License
 ISC
