@@ -8,16 +8,16 @@ var config = {
   domain: 's3-website-test-' + Math.random().toString(16).slice(2),
   routes: [{
     Condition: {
-        KeyPrefixEquals: 'foo/'
+      KeyPrefixEquals: 'foo/'
     },
     Redirect: {
-        HostName: 'example.com'
+      HostName: 'example.com'
     }
   }]
 }
 
-test('create website', function(t) {
-  s3site(config, function(err, website) {
+test('create website', function (t) {
+  s3site(config, function (err, website) {
     if (err) cleanup(config.domain)
 
     t.error(err, 'no error')
@@ -45,7 +45,7 @@ test('create website', function(t) {
   })
 })
 
-test('create www redirect', function(t) {
+test('create www redirect', function (t) {
   var subdomain = 'www.' + config.domain
   var destination = 'http://' + config.domain + '/'
 
@@ -53,7 +53,7 @@ test('create www redirect', function(t) {
     region: config.region,
     domain: subdomain,
     redirectall: config.domain
-  }, function(err, website) {
+  }, function (err, website) {
     if (err) cleanup(subdomain)
     t.error(err, 'redirect configured')
     t.equal(website.config.RedirectAllRequestsTo.HostName, config.domain)
@@ -63,10 +63,10 @@ test('create www redirect', function(t) {
       .expect(301)
       .expect('content-length', 0)
       .expect('location', destination)
-      .end(function(err, res) {
+      .end(function (err, res) {
         if (err) cleanup(subdomain)
         t.error(err, 'redirect working')
-        cleanup(subdomain, function() {
+        cleanup(subdomain, function () {
           t.pass('deleted ' + subdomain)
           t.end()
         })
@@ -74,17 +74,17 @@ test('create www redirect', function(t) {
   })
 })
 
-test('update website', function(t) {
+test('update website', function (t) {
   config.index = 'foo.html'
   config.error = '404.html'
 
-  s3site(config, function(err, website) {
+  s3site(config, function (err, website) {
     if (err) cleanup(config.domain)
     t.error(err, 'website updated')
     t.equal(website.config.IndexDocument.Suffix, 'foo.html')
     t.equal(website.config.ErrorDocument.Key, '404.html')
 
-    cleanup(config.domain, function() {
+    cleanup(config.domain, function () {
       t.pass('deleted ' + config.domain)
       t.end()
     })
@@ -94,8 +94,8 @@ test('update website', function(t) {
 function cleanup (bucket, cb) {
   var s3 = new AWS.S3({ region: config.region })
 
-  s3.deleteObject({ Bucket: config.domain, Key: 'index.html' }, function(err) {
-    s3.deleteBucket({ Bucket: bucket }, function(err, data) {
+  s3.deleteObject({ Bucket: config.domain, Key: 'index.html' }, function () {
+    s3.deleteBucket({ Bucket: bucket }, function (err, data) {
       if (err) throw err
       if (cb) cb()
     })

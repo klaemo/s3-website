@@ -30,7 +30,7 @@ if (!program.args.length) {
 
 program.domain = program.args[0]
 
-s3site(program, function(err, website) {
+s3site(program, function (err, website) {
   if (err) {
     if (program.json) {
       console.error(JSON.stringify({ code: err.code, message: err.message }))

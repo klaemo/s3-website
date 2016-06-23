@@ -4,8 +4,8 @@
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
   "scripts": {
-    "test": "node test/index.js | faucet",
-    "prepublish": "npm ls && npm test"
+    "lint": "snazzy",
+    "test": "npm run lint && node test/index.js | faucet"
   },
   "bin": {
     "s3-website": "./cli.js"
@@ -37,6 +37,7 @@
   },
   "devDependencies": {
     "faucet": "0.0.1",
+    "snazzy": "^4.0.0",
     "supertest": "^0.15.0",
     "tape": "^3.0.3"
   }
