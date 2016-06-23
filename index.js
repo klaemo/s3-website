@@ -13,7 +13,7 @@ var defaultConfig = {
 }
 
 var defaultBucketConfig = {
-  Bucket: '', /* required */
+  Bucket: '' /* required */
 }
 
 var defaultWebsiteConfig = {
@@ -25,7 +25,7 @@ var defaultWebsiteConfig = {
   }
 }
 
-module.exports = function(config, cb) {
+module.exports = function (config, cb) {
   if (typeof cb !== 'function') cb = function () {}
 
   assert(typeof config === 'object')
@@ -67,19 +67,19 @@ module.exports = function(config, cb) {
 
   var s3 = new AWS.S3({ region: config.region })
 
-  s3.createBucket(bucketConfig, function(err, bucket) {
+  s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
 
-    setPolicy(s3, config.domain, function(err) {
+    setPolicy(s3, config.domain, function (err) {
       if (err) return cb(err)
-      createWebsite(s3, websiteConfig, config, function(err, website) {
+      createWebsite(s3, websiteConfig, config, function (err, website) {
         if (err) return cb(err)
 
         if (config.cert || config.certId) {
           config.aliases = config.aliases || [ config.domain ]
           config.origin = url.parse(website.url).host
 
-          cloudfront(config, function(err, distribution) {
+          cloudfront(config, function (err, distribution) {
             if (err) return cb(err)
 
             website.url = 'http://' + distribution.url
@@ -96,8 +96,7 @@ module.exports = function(config, cb) {
 }
 
 function createWebsite (s3, websiteConfig, config, cb) {
-
-  function parseWebsite(website, modified) {
+  function parseWebsite (website, modified) {
     var host
 
     // Frankfurt has a slightly differnt URL scheme :(
@@ -115,22 +114,23 @@ function createWebsite (s3, websiteConfig, config, cb) {
     return {
       url: siteUrl,
       config: website,
-      modified: modified ? true : false
+      modified: !!modified
     }
   }
 
-  function putWebsite() {
-    s3.putBucketWebsite(websiteConfig, function(err, website) {
+  function putWebsite () {
+    s3.putBucketWebsite(websiteConfig, function (err, website) {
       if (err) return cb(err)
 
-      s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+      s3.getBucketWebsite({ Bucket: config.domain }, function (err, website) {
         if (err) return cb(err)
         cb(null, parseWebsite(website, true))
       })
     })
   }
 
-  s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+  s3.getBucketWebsite({ Bucket: config.domain }, function (err, website) {
+    if (err) return cb(err)
     var dirty = diff(website || {}, websiteConfig.WebsiteConfiguration)
     if (dirty) {
       putWebsite()
@@ -150,7 +150,7 @@ function setPolicy (s3, bucket, cb) {
     Resource: 'arn:aws:s3:::' + bucket + '/*'
   }
 
-  s3.getBucketPolicy({ Bucket: bucket }, function(err, data) {
+  s3.getBucketPolicy({ Bucket: bucket }, function (err, data) {
     if (err && err.code !== 'NoSuchBucketPolicy') return cb(err)
 
     var newPolicy = { Statement: [] }
@@ -163,7 +163,7 @@ function setPolicy (s3, bucket, cb) {
     var found = false
 
     if (oldPolicy) {
-      newPolicy.Statement = oldPolicy.Statement.map(function(item) {
+      newPolicy.Statement = oldPolicy.Statement.map(function (item) {
         if (item.Sid === 'AddPublicReadPermissions') {
           found = true
           return publicRead
@@ -174,7 +174,7 @@ function setPolicy (s3, bucket, cb) {
 
     if (!found) newPolicy.Statement.push(publicRead)
 
-    var dirty = diff(oldPolicy || {}, newPolicy, function(path, key) {
+    var dirty = diff(oldPolicy || {}, newPolicy, function (path, key) {
       if (key === 'Version') return true
     })
 
@@ -187,7 +187,7 @@ function setPolicy (s3, bucket, cb) {
   })
 }
 
-function loadRoutes(routesOrFile) {
+function loadRoutes (routesOrFile) {
   var routes
   if (typeof routesOrFile === 'string') {
     routes = require(path.resolve(__dirname, routesOrFile))
@@ -199,7 +199,7 @@ function loadRoutes(routesOrFile) {
   return routes
 }
 
-function validateRoutes(routes) {
+function validateRoutes (routes) {
   assert(Array.isArray(routes), 'Routes must be an array')
 
   var validProperties = {
@@ -223,7 +223,7 @@ function validateRoutes(routes) {
   })
 }
 
-function validateProps(obj, props, idx) {
+function validateProps (obj, props, idx) {
   var keys = Object.keys(obj)
   assert(keys.length > 0, util.format('Invalid route at index %s', idx))
   keys.forEach(function (key) {
