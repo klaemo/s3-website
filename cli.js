@@ -15,7 +15,7 @@ program
 
 program
   .command('create <domain>')
-  .usage('s3-website domain [options]')
+  .usage('<domain> [options]')
   .description('Will create and configure an s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-i, --index <index>', 'Index Document [index.html].')
@@ -54,7 +54,7 @@ program
 
 program
   .command('deploy <upload-dir>')
-  .usage('s3-website deploy <dir> [options]')
+  .usage('<dir> [options]')
   .description('Will push contents of directory to specified s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
@@ -88,6 +88,13 @@ program
     console.log("Config file: ")
     console.log("Should be titled .s3-website.json")
     console.log("should contain only a JSON object with keys: region, domain, uploadDir")
+  });
+
+program
+  .command('*')
+  .description('Output usage message')
+  .action(function(env){
+    program.help();
   });
 
 
