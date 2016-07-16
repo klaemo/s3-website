@@ -10,7 +10,11 @@ var deploy = s3Website.deploy;
 var getConfig = s3Website.config;
 
 program
-  .usage('To see more information about any command: \n    s3-website command -h')
+  .usage(':Use one of commands below to create an s3-website or deploy content to an existing bucket.\n' +
+    '\n  Credentials: Aws Credentials should either be supplied in a local .env file or in ~/.aws/credentials\n' +
+    '    Credentials should follow this format: \n    AWS_ACCESS_KEY_ID=MY_KEY_ID\n    AWS_SECRET_ACCESS_KEY=MY_SECRET_KEY\n\n' +
+    'To see more information about any command: \n    s3-website command -h'
+  )
   .version(require('./package.json').version)
 
 program
@@ -68,8 +72,7 @@ program
       var s3 = new AWS.S3({ region: config.region })
       deploy(s3, config, function(err, files){
         if(err){
-          console.error(e.message)
-          program.outputHelp()
+          console.error('\n' + err.message + '\n');
           process.exit(1)
         }
       })
