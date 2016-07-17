@@ -4,7 +4,12 @@ Easily publish static websites to Amazon S3. TLS encryption can be enabled via C
 
 Creates a bucket with the specified name and enables static website hosting on it. Also, sets up a public-read bucket policy.
 
-Your AWS credentials should either be in `~/.aws/credentials` or in the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+Your AWS credentials should either be in `~/.aws/credentials`, a file in the local directory entitled .env with the values
+```
+AWS_ACCESS_KEY_ID=MY_KEY_ID
+AWS_SECRET_ACCESS_KEY=MY_SECRET_KEY
+```
+ or in the environment variables `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 Your website policy and configuration will only be sent to S3 when it differs
 from the existing.
@@ -23,29 +28,32 @@ settings provided to `s3-website`.
 npm install -g s3-website
 ```
 
+
 ### Usage (CLI)
 
 ```
-$ s3-website -h
 
-  Usage: s3-website [options] domain
+  $ s3-website -h
+  Commands:
 
-  Options:
-
-    -h, --help                           output usage information
-    -V, --version                        output the version number
-    -r, --region <region>                Region [us-east-1]
-    -i, --index <index>                  Index Document [index.html]
-    -e, --error <error>                  Error Document
-    -t, --routes <routes>                Path to a require'able RoutingRules file
-    --json                               Output JSON
-    --cert-id <IAM ServerCertId>         The ID of your cert in IAM.
-    -c, --cert <cert>                    Path to the public key certificate.
-    -k, --key <key>                      Path to the private key.
-    -n, --cert-name <certificate name>   A unique name for the server certificate.
-    --intermediate <intermediate certs>  Path to the concatenated intermediate certificates.
-
+    create [options] <domain>      Will create and configure an s3 website
+    deploy [options] <upload-dir>  Will push contents of directory to specified s3 website
 ```
+To see options for each command  `s3-website command -h`
+
+#### Create
+  Usage `s3-website create <desired.bucket.name> [options]`
+  * Will create a new bucket with desired name
+  * Will configure bucket for static hosting
+
+#### Deploy
+  Usage `s3-website deploy <directory-to-upload> [options]`
+  * Will upload all contents of directory to bucket, replacing existing files
+  * Bucket can be specified by providing command line argument -d, or --domain
+    followed by the name of the s3 bucket. If no option is provided s3-website
+    will look for config file written when bucket is created.
+
+
 All the options are optional ;-).
 
 `s3-website -r eu-central-1 cool.website.me` creates a website bucket with the following URL `http://cool.website.me.s3-website.eu-central-1.amazonaws.com`.
@@ -106,6 +114,7 @@ s3site({
 
 - [mshick](https://github.com/mshick)
 - [rgruesbeck](https://github.com/rgruesbeck)
+- [nick-benoit14](https://github.com/nick-benoit14)
 
 ### License
 ISC

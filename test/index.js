@@ -1,6 +1,6 @@
 var test = require('tape')
 var supertest = require('supertest')
-var s3site = require('../')
+var s3site = require('../').s3site 
 var AWS = require('aws-sdk')
 
 var config = {
@@ -42,6 +42,24 @@ test('create website', function(t) {
         .expect(/Foo/)
         .end(t.end)
     })
+  })
+})
+
+
+test('upload content', function(t){
+  var s3 = new AWS.S3({ region: config.region })
+  config.uploadDir = './test/fixtures';
+  config.index = 'test-upload.html'
+
+  //Check if content from upload directory exists
+  s3site(config, function(err, website){
+    if(err) cleanup(config.domain)
+    t.error(err, 'website uploaded')
+    supertest(website.url).get('/test-upload.html')
+        .expect(200)
+        .expect('content-type', /html/)
+        .expect(/Howdy/)
+        .end(t.end)
   })
 })
 
@@ -91,10 +109,14 @@ test('update website', function(t) {
   })
 })
 
+
 function cleanup (bucket, cb) {
   var s3 = new AWS.S3({ region: config.region })
 
-  s3.deleteObject({ Bucket: config.domain, Key: 'index.html' }, function(err) {
+  s3.deleteObjects({
+    Bucket: config.domain,
+    Delete:{Objects:[{Key:'index.html'},{Key:'test-upload.html'}]}
+  }, function(err) {
     s3.deleteBucket({ Bucket: bucket }, function(err, data) {
       if (err) throw err
       if (cb) cb()

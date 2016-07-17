@@ -7,6 +7,10 @@ var url = require('url')
 var cloudfront = require('cloudfront-tls')
 var diff = require('deep-diff').diff
 var assign = require('object-assign')
+var fs = require('fs')
+var glob = require('glob')
+var mime = require('mime')
+var dotenv = require('dotenv').config({silent:true});
 
 var defaultConfig = {
   index: 'index.html'
@@ -25,7 +29,7 @@ var defaultWebsiteConfig = {
   }
 }
 
-module.exports = function(config, cb) {
+function s3site(config, cb) {
   if (typeof cb !== 'function') cb = function () {}
 
   assert(typeof config === 'object')
@@ -85,9 +89,27 @@ module.exports = function(config, cb) {
             website.url = 'http://' + distribution.url
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
+
+            writeConfig(config, function(err){
+              if(err) return console.error("Error:" + err.message)
+              console.log("Wrote config file: .s3-website.json")
+            })
+
+            if(config.uploadDir){
+              return putWebsiteContent(s3, config, function(err){cb(err, website);})
+            }
             cb(null, website)
           })
         } else {
+
+          writeConfig(config, function(err){
+              if(err) return console.error("Error:" + err.message)
+              console.log("Wrote config file: .s3-website.json")
+          })
+
+          if(config.uploadDir){
+            return putWebsiteContent(s3, config, function(err){cb(err, website);})
+          }
           cb(null, website)
         }
       })
@@ -230,3 +252,66 @@ function validateProps(obj, props, idx) {
     assert(props[key], util.format('Invalid route property %s at index %s', key, idx))
   })
 }
+
+function writeConfig(config, cb){
+  if(typeof cb !== "function"){cb = function(){}}
+  settings = {}
+  if(config.domain) settings['domain'] = config.domain
+  if(config.region) settings['region'] = config.region
+  if(config.uploadDir) settings['uploadDir'] = config.uploadDir
+
+  fs.writeFile(".s3-website.json", JSON.stringify(settings), cb);
+}
+
+function getConfig(path, cb){
+  fs.readFile(path, function(err, data){
+    try{data = JSON.parse(data);}
+    catch(e){}
+    cb(err, data);
+  });
+}
+
+function putWebsiteContent(s3, config, cb){
+  if(typeof cb !== "function"){cb = function(){}}
+
+  var options = {};
+  var pattern = (config.uploadDir || '.') + "/**/*";
+
+  glob(pattern, options, function(err, files){
+    if(err){return cb(err)}
+
+    var uploaded = 0;
+    var to_upload = files.filter(function(item){
+      return fs.statSync(item).isFile()}).length;
+
+    files.forEach(function(file){
+
+      fs.stat(file, function(err, stat){
+        if(err){return cb(err)}
+        if(stat.isFile()){
+
+          var params = {
+            Bucket: config.domain,
+            Key: path.relative(config.uploadDir, file),
+            Body: fs.createReadStream(file),
+            ContentType: mime.lookup(file)
+          }
+
+          s3.putObject(params, function(err, data){
+            if(err){return cb(err);}
+            else(console.log("Uploaded: " + params["Key"]))
+            uploaded++;
+            if(uploaded == to_upload){cb(null, files)}
+          });
+        }
+      });
+    });
+  });
+}
+
+
+module.exports = {
+  s3site:s3site,
+  deploy:putWebsiteContent,
+  config:getConfig
+};
