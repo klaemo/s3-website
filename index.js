@@ -271,7 +271,8 @@ function getConfig(path, cb){
   });
 }
 
-function uploadFile(s3, file, config, cb){
+//TODO call upload file with each file from diff
+function uploadFile(s3, config, file, cb){
   var params = {
     Bucket: config.domain,
     Key: path.relative(config.uploadDir, file),
@@ -279,9 +280,8 @@ function uploadFile(s3, file, config, cb){
     ContentType: mime.lookup(file)
   }
   s3.putObject(params, function(err, data){
-    if(err){return cb(err);}
-    else{console.log("Uploaded: " + params["Key"])};
-    if(cb){cb(err, data);}
+    if(err && cb){return cb(err);}
+    if(cb){cb(err, data, file);}
   });
 }
 
@@ -290,23 +290,38 @@ function putWebsiteContent(s3, config, cb){
 
   var options = {};
   var pattern = (config.uploadDir || '.') + "/**/*";
-
   var s3diff = require('s3-diff');
     s3diff({
     aws: {
     },
-    local: __dirname + '/test/fixtures',
+    local: config.uploadDir,
     remote: {
       bucket: 'test.another.yes',
-      prefix: 'fixtures'
+      prefix: ''
     }
   }, function (err, data) {
-    debugger;
   // data is an object with the following properties:
   //  changed: Files that have been changed - files that exists in both s3 & locally but are out of sync
   //  extra: Files that exists locally but not in s3
   //  missing: Files that exists in s3 but not locally
   //  keep: Files that exists both in s3 & locally and that are equal
+
+    // function logChanged(){}
+
+
+    // Delete files that exist on s3, but not locally
+    data.missing.forEach(function(file){});
+
+    // Upload changed files
+    data.changed.forEach(function(file){
+      uploadFile(s3, config, file);
+    });
+
+    // Upload files that exist locally but not on s3
+    data.extra.forEach(function(file){
+      uploadFile(s3, config, file);
+    });
+
   });
 
 
