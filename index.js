@@ -276,15 +276,17 @@ function uploadFile(s3, config, file, cb){
   var params = {
     Bucket: config.domain,
     Key: path.relative(config.uploadDir, file),
-    Body: fs.createReadStream(file),
+    Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: mime.lookup(file)
   }
+
   s3.putObject(params, function(err, data){
     if(err && cb){return cb(err);}
     if(cb){cb(err, data, file);}
   });
 }
 
+//TODO push changes to s3-diff
 function putWebsiteContent(s3, config, cb){
   if(typeof cb !== "function"){cb = function(){}}
 
@@ -300,21 +302,21 @@ function putWebsiteContent(s3, config, cb){
       prefix: ''
     }
   }, function (err, data) {
-  // data is an object with the following properties:
-  //  changed: Files that have been changed - files that exists in both s3 & locally but are out of sync
-  //  extra: Files that exists locally but not in s3
-  //  missing: Files that exists in s3 but not locally
-  //  keep: Files that exists both in s3 & locally and that are equal
 
-    // function logChanged(){}
-
+    function logChanged(err, data, file){
+      console.log("Uploaded:", file);
+    }
+    function logExtra(err, data, file){
+      console.log("Uploaded:", file);
+    }
+    function logMissing(err, data, file){}
 
     // Delete files that exist on s3, but not locally
     data.missing.forEach(function(file){});
 
     // Upload changed files
     data.changed.forEach(function(file){
-      uploadFile(s3, config, file);
+      uploadFile(s3, config, file, logChanged);
     });
 
     // Upload files that exist locally but not on s3
