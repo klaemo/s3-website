@@ -271,42 +271,75 @@ function getConfig(path, cb){
   });
 }
 
+function uploadFile(s3, file, config, cb){
+  var params = {
+    Bucket: config.domain,
+    Key: path.relative(config.uploadDir, file),
+    Body: fs.createReadStream(file),
+    ContentType: mime.lookup(file)
+  }
+  s3.putObject(params, function(err, data){
+    if(err){return cb(err);}
+    else{console.log("Uploaded: " + params["Key"])};
+    if(cb){cb(err, data);}
+  });
+}
+
 function putWebsiteContent(s3, config, cb){
   if(typeof cb !== "function"){cb = function(){}}
 
   var options = {};
   var pattern = (config.uploadDir || '.') + "/**/*";
 
-  glob(pattern, options, function(err, files){
-    if(err){return cb(err)}
-
-    var uploaded = 0;
-    var to_upload = files.filter(function(item){
-      return fs.statSync(item).isFile()}).length;
-
-    files.forEach(function(file){
-
-      fs.stat(file, function(err, stat){
-        if(err){return cb(err)}
-        if(stat.isFile()){
-
-          var params = {
-            Bucket: config.domain,
-            Key: path.relative(config.uploadDir, file),
-            Body: fs.createReadStream(file),
-            ContentType: mime.lookup(file)
-          }
-
-          s3.putObject(params, function(err, data){
-            if(err){return cb(err);}
-            else(console.log("Uploaded: " + params["Key"]))
-            uploaded++;
-            if(uploaded == to_upload){cb(null, files)}
-          });
-        }
-      });
-    });
+  var s3diff = require('s3-diff');
+    s3diff({
+    aws: {
+    },
+    local: __dirname + '/test/fixtures',
+    remote: {
+      bucket: 'test.another.yes',
+      prefix: 'fixtures'
+    }
+  }, function (err, data) {
+    debugger;
+  // data is an object with the following properties:
+  //  changed: Files that have been changed - files that exists in both s3 & locally but are out of sync
+  //  extra: Files that exists locally but not in s3
+  //  missing: Files that exists in s3 but not locally
+  //  keep: Files that exists both in s3 & locally and that are equal
   });
+
+
+  // glob(pattern, options, function(err, files){
+  //   if(err){return cb(err)}
+  //
+  //   var uploaded = 0;
+  //   var to_upload = files.filter(function(item){
+  //     return fs.statSync(item).isFile()}).length;
+  //
+  //   files.forEach(function(file){
+  //
+  //     fs.stat(file, function(err, stat){
+  //       if(err){return cb(err)}
+  //       if(stat.isFile()){
+  //
+  //         var params = {
+  //           Bucket: config.domain,
+  //           Key: path.relative(config.uploadDir, file),
+  //           Body: fs.createReadStream(file),
+  //           ContentType: mime.lookup(file)
+  //         }
+  //
+  //         s3.putObject(params, function(err, data){
+  //           if(err){return cb(err);}
+  //           else(console.log("Uploaded: " + params["Key"]))
+  //           uploaded++;
+  //           if(uploaded == to_upload){cb(null, files)}
+  //         });
+  //       }
+  //     });
+  //   });
+  // });
 }
 
 
