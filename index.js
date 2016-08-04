@@ -319,36 +319,45 @@ function putWebsiteContent(s3, config, cb){
       errors:[]
     };
 
-//TODO implement check done
-    function checkDone(){
-      var numFinished = uploaded.length + updated.length +
-      if(uploaded.length )
+    function checkDone(allFiles, results){
+      const files = [allFiles.missing, allFiles.changed, allFiles.extra];
+      const finished = [results.uploaded, results.updated, results.removed, results.errors];
+      const totalFiles = files.reduce(function(prev, current){
+        return prev.concat(current);
+      }, []).length;
+      const fileResults = finished.reduce(function(prev, current){
+        return prev.concat(current);
+      }, []).length;
+
+      return fileResults >= totalFiles;
     }
 
     debugger;
 
     // Delete files that exist on s3, but not locally
     data.missing.forEach(function(file){
-      deleteFile(s3, config, file, function(err, data, file){
+      deleteFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
-        removed.push(file);
+        results.removed.push(file);
         checkDone(data, results);
       });
     });
 
     // Upload changed files
     data.changed.forEach(function(file){
-      uploadFile(s3, config, file, function(err, data, file){
+      uploadFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
-        updated.push(file);
+        results.updated.push(file);
+        checkDone(data, results);
       });
     });
 
     // Upload files that exist locally but not on s3
     data.extra.forEach(function(file){
-      uploadFile(s3, config, file, function(err, data, file){
+      uploadFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
-        uploaded.push(file);
+        results.uploaded.push(file);
+        checkDone(data, results);
       });
     });
 
