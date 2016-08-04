@@ -271,7 +271,6 @@ function getConfig(path, cb){
   });
 }
 
-//TODO delete file
 function deleteFile(s3, config, file, cb){
     var params = {
     Bucket: config.domain,
@@ -313,38 +312,47 @@ function putWebsiteContent(s3, config, cb){
     }
   }, function (err, data) {
 
-    function logChanged(err, data, file){
-      if(err) console.log(err);
-      // debugger;
-      console.log("Uploaded:", file);
-    }
-    function logExtra(err, data, file){
-      if(err){console.log(err)}
-      // debugger;
-      console.log("Uploaded:", file);
-    }
-    function logMissing(err, data, file){
-      if(err){console.log(err)}
-      console.log("Removed: ", file);
-      // debugger;
+    var results = {
+      uploaded:[],
+      updated:[],
+      removed:[],
+      errors:[]
+    };
+
+//TODO implement check done
+    function checkDone(){
+      var numFinished = uploaded.length + updated.length +
+      if(uploaded.length )
     }
 
     debugger;
+
     // Delete files that exist on s3, but not locally
     data.missing.forEach(function(file){
-      deleteFile(s3, config, file, logMissing);
+      deleteFile(s3, config, file, function(err, data, file){
+        if(err){return errors.push(err);}
+        removed.push(file);
+        checkDone(data, results);
+      });
     });
 
     // Upload changed files
     data.changed.forEach(function(file){
-      uploadFile(s3, config, file, logChanged);
+      uploadFile(s3, config, file, function(err, data, file){
+        if(err){return errors.push(err);}
+        updated.push(file);
+      });
     });
 
     // Upload files that exist locally but not on s3
     data.extra.forEach(function(file){
-      uploadFile(s3, config, file, logExtra);
+      uploadFile(s3, config, file, function(err, data, file){
+        if(err){return errors.push(err);}
+        uploaded.push(file);
+      });
     });
 
+    debugger;
   });
 
 
