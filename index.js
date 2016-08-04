@@ -319,7 +319,15 @@ function putWebsiteContent(s3, config, cb){
       errors:[]
     };
 
-    function checkDone(allFiles, results){
+    function printResults(results){
+      debugger;
+      results.uploaded.forEach(function(){});
+      results.updated.forEach(function(){});
+      results.removed.forEach(function(){});
+      results.errors.forEach(function(){});
+    }
+
+    function checkDone(allFiles, results, cb){
       const files = [allFiles.missing, allFiles.changed, allFiles.extra];
       const finished = [results.uploaded, results.updated, results.removed, results.errors];
       const totalFiles = files.reduce(function(prev, current){
@@ -329,17 +337,18 @@ function putWebsiteContent(s3, config, cb){
         return prev.concat(current);
       }, []).length;
 
-      return fileResults >= totalFiles;
+      if(fileResults >= totalFiles && cb){
+        printResults(results);
+        cb(results);
+      }
     }
-
-    debugger;
 
     // Delete files that exist on s3, but not locally
     data.missing.forEach(function(file){
       deleteFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
         results.removed.push(file);
-        checkDone(data, results);
+        checkDone(data, results, cb);
       });
     });
 
@@ -348,7 +357,7 @@ function putWebsiteContent(s3, config, cb){
       uploadFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
         results.updated.push(file);
-        checkDone(data, results);
+        checkDone(data, results, cb);
       });
     });
 
@@ -357,11 +366,9 @@ function putWebsiteContent(s3, config, cb){
       uploadFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
         results.uploaded.push(file);
-        checkDone(data, results);
+        checkDone(data, results, cb);
       });
     });
-
-    debugger;
   });
 
 
