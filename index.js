@@ -386,38 +386,6 @@ function putWebsiteContent(s3, config, cb){
     });
     checkDone(data, results, cb);
   });
-
-
-  // glob(pattern, options, function(err, files){
-  //   if(err){return cb(err)}
-  //
-  //   var uploaded = 0;
-  //   var to_upload = files.filter(function(item){
-  //     return fs.statSync(item).isFile()}).length;
-  //
-  //   files.forEach(function(file){
-  //
-  //     fs.stat(file, function(err, stat){
-  //       if(err){return cb(err)}
-  //       if(stat.isFile()){
-  //
-  //         var params = {
-  //           Bucket: config.domain,
-  //           Key: path.relative(config.uploadDir, file),
-  //           Body: fs.createReadStream(file),
-  //           ContentType: mime.lookup(file)
-  //         }
-  //
-  //         s3.putObject(params, function(err, data){
-  //           if(err){return cb(err);}
-  //           else(console.log("Uploaded: " + params["Key"]))
-  //           uploaded++;
-  //           if(uploaded == to_upload){cb(null, files)}
-  //         });
-  //       }
-  //     });
-  //   });
-  // });
 }
 
 
