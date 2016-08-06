@@ -1,6 +1,6 @@
 var test = require('tape')
 var supertest = require('supertest')
-var s3site = require('../').s3site 
+var s3site = require('../').s3site
 var AWS = require('aws-sdk')
 
 var config = {
@@ -8,16 +8,16 @@ var config = {
   domain: 's3-website-test-' + Math.random().toString(16).slice(2),
   routes: [{
     Condition: {
-        KeyPrefixEquals: 'foo/'
+      KeyPrefixEquals: 'foo/'
     },
     Redirect: {
-        HostName: 'example.com'
+      HostName: 'example.com'
     }
   }]
 }
 
-test('create website', function(t) {
-  s3site(config, function(err, website) {
+test('create website', function (t) {
+  s3site(config, function (err, website) {
     if (err) cleanup(config.domain)
 
     t.error(err, 'no error')
@@ -45,6 +45,7 @@ test('create website', function(t) {
   })
 })
 
+<<<<<<< HEAD
 
 test('upload content', function(t){
   var s3 = new AWS.S3({ region: config.region })
@@ -54,6 +55,15 @@ test('upload content', function(t){
   //Check if content from upload directory exists
   s3site(config, function(err, website){
     if(err) cleanup(config.domain)
+=======
+test('upload content', function (t) {
+  config.uploadDir = './test/fixtures'
+  config.index = 'test-upload.html'
+
+  // Check if content from upload directory exists
+  s3site(config, function (err, website) {
+    if (err) cleanup(config.domain)
+>>>>>>> 8a1eceec7d90702eb61fe3cf21fad144906271d7
     t.error(err, 'website uploaded')
     supertest(website.url).get('/test-upload.html')
         .expect(200)
@@ -63,7 +73,11 @@ test('upload content', function(t){
   })
 })
 
+<<<<<<< HEAD
 test('create www redirect', function(t) {
+=======
+test('create www redirect', function (t) {
+>>>>>>> 8a1eceec7d90702eb61fe3cf21fad144906271d7
   var subdomain = 'www.' + config.domain
   var destination = 'http://' + config.domain + '/'
 
@@ -71,7 +85,7 @@ test('create www redirect', function(t) {
     region: config.region,
     domain: subdomain,
     redirectall: config.domain
-  }, function(err, website) {
+  }, function (err, website) {
     if (err) cleanup(subdomain)
     t.error(err, 'redirect configured')
     t.equal(website.config.RedirectAllRequestsTo.HostName, config.domain)
@@ -81,10 +95,10 @@ test('create www redirect', function(t) {
       .expect(301)
       .expect('content-length', 0)
       .expect('location', destination)
-      .end(function(err, res) {
+      .end(function (err, res) {
         if (err) cleanup(subdomain)
         t.error(err, 'redirect working')
-        cleanup(subdomain, function() {
+        cleanup(subdomain, function () {
           t.pass('deleted ' + subdomain)
           t.end()
         })
@@ -92,17 +106,17 @@ test('create www redirect', function(t) {
   })
 })
 
-test('update website', function(t) {
+test('update website', function (t) {
   config.index = 'foo.html'
   config.error = '404.html'
 
-  s3site(config, function(err, website) {
+  s3site(config, function (err, website) {
     if (err) cleanup(config.domain)
     t.error(err, 'website updated')
     t.equal(website.config.IndexDocument.Suffix, 'foo.html')
     t.equal(website.config.ErrorDocument.Key, '404.html')
 
-    cleanup(config.domain, function() {
+    cleanup(config.domain, function () {
       t.pass('deleted ' + config.domain)
       t.end()
     })
@@ -115,9 +129,17 @@ function cleanup (bucket, cb) {
 
   s3.deleteObjects({
     Bucket: config.domain,
+<<<<<<< HEAD
     Delete:{Objects:[{Key:'index.html'},{Key:'test-upload.html'}]}
   }, function(err) {
     s3.deleteBucket({ Bucket: bucket }, function(err, data) {
+=======
+    Delete: {
+      Objects: [{ Key: 'index.html' }, { Key: 'test-upload.html' }]
+    }
+  }, function (err) { // eslint-disable-line handle-callback-err
+    s3.deleteBucket({ Bucket: bucket }, function (err, data) {
+>>>>>>> 8a1eceec7d90702eb61fe3cf21fad144906271d7
       if (err) throw err
       if (cb) cb()
     })

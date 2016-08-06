@@ -1,11 +1,12 @@
 {
   "name": "s3-website",
-  "version": "1.5.0",
+  "version": "2.0.0",
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
   "scripts": {
     "test": "node test/index.js | faucet",
-    "prepublish": "npm ls && npm test"
+    "lint": "snazzy",
+    "prepublish": "npm prune && npm ls && npm run lint && npm test"
   },
   "bin": {
     "s3-website": "./cli.js"
@@ -33,13 +34,14 @@
     "commander": "^2.6.0",
     "deep-diff": "^0.3.0",
     "dotenv": "^2.0.0",
+    "glob": "7.0.5",
     "merge-defaults": "^0.2.1",
     "mime": "^1.3.4",
-    "node-glob": "^1.2.0",
     "object-assign": "^2.0.0"
   },
   "devDependencies": {
     "faucet": "0.0.1",
+    "snazzy": "4.0.0",
     "supertest": "^0.15.0",
     "tape": "^3.0.3"
   }
