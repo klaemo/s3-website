@@ -320,23 +320,23 @@ function putWebsiteContent(s3, config, cb){
     };
 
     function printResults(results){
-      results.errors.forEach(function(){
+      results.errors.forEach(function(file){
         console.log("Error uploading: " + file);
       });
-      results.removed.forEach(function(){
+      results.removed.forEach(function(file){
         console.log("Removed: " + file);
       });
       results.uploaded.forEach(function(file){
         console.log("Uploaded: " + file);
       });
-      results.updated.forEach(function(){
+      results.updated.forEach(function(file){
         console.log("Updated: " + file);
       });
 
       var isEmpty = Object.keys(results).reduce(function(prev, current){
-        if(current.length > 0){return true;}
-        else return prev;
-      }, false);
+        if(results[current].length > 0){return false;}
+        return prev;
+      }, true);
       if(isEmpty){
         console.log("There was nothing to push");
       }
@@ -354,7 +354,7 @@ function putWebsiteContent(s3, config, cb){
 
       if(fileResults >= totalFiles && cb){
         printResults(results);
-        cb(results);
+        cb(null, results);
       }
     }
 
