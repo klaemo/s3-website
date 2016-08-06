@@ -45,17 +45,6 @@ test('create website', function (t) {
   })
 })
 
-<<<<<<< HEAD
-
-test('upload content', function(t){
-  var s3 = new AWS.S3({ region: config.region })
-  config.uploadDir = './test/fixtures';
-  config.index = 'test-upload.html'
-
-  //Check if content from upload directory exists
-  s3site(config, function(err, website){
-    if(err) cleanup(config.domain)
-=======
 test('upload content', function (t) {
   config.uploadDir = './test/fixtures'
   config.index = 'test-upload.html'
@@ -63,7 +52,6 @@ test('upload content', function (t) {
   // Check if content from upload directory exists
   s3site(config, function (err, website) {
     if (err) cleanup(config.domain)
->>>>>>> 8a1eceec7d90702eb61fe3cf21fad144906271d7
     t.error(err, 'website uploaded')
     supertest(website.url).get('/test-upload.html')
         .expect(200)
@@ -73,11 +61,7 @@ test('upload content', function (t) {
   })
 })
 
-<<<<<<< HEAD
-test('create www redirect', function(t) {
-=======
 test('create www redirect', function (t) {
->>>>>>> 8a1eceec7d90702eb61fe3cf21fad144906271d7
   var subdomain = 'www.' + config.domain
   var destination = 'http://' + config.domain + '/'
 
@@ -129,17 +113,11 @@ function cleanup (bucket, cb) {
 
   s3.deleteObjects({
     Bucket: config.domain,
-<<<<<<< HEAD
-    Delete:{Objects:[{Key:'index.html'},{Key:'test-upload.html'}]}
-  }, function(err) {
-    s3.deleteBucket({ Bucket: bucket }, function(err, data) {
-=======
     Delete: {
       Objects: [{ Key: 'index.html' }, { Key: 'test-upload.html' }]
     }
   }, function (err) { // eslint-disable-line handle-callback-err
     s3.deleteBucket({ Bucket: bucket }, function (err, data) {
->>>>>>> 8a1eceec7d90702eb61fe3cf21fad144906271d7
       if (err) throw err
       if (cb) cb()
     })
