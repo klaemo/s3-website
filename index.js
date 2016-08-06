@@ -13,7 +13,8 @@ require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
 
 var defaultConfig = {
-  index: 'index.html'
+  index: 'index.html',
+  region: 'us-east-1'
 }
 
 var defaultBucketConfig = {
@@ -48,7 +49,7 @@ function s3site (config, cb) {
   if (config.region) {
     bucketConfig.CreateBucketConfiguration = { LocationConstraint: config.region }
   } else {
-    config.region = 'us-east-1'
+    config.region = defaultConfig.region
   }
 
   if (config.redirectall) {
@@ -245,15 +246,15 @@ function validateProps (obj, props, idx) {
   })
 }
 
-function writeConfig (config, cb) {
-  if (typeof cb !== 'function') { cb = function () {} }
-  var settings = {}
-  if (config.domain) settings['domain'] = config.domain
-  if (config.region) settings['region'] = config.region
-  if (config.uploadDir) settings['uploadDir'] = config.uploadDir
-
-  fs.writeFile('.s3-website.json', JSON.stringify(settings), cb)
-}
+// function writeConfig (config, cb) {
+//   if (typeof cb !== 'function') { cb = function () {} }
+//   var settings = {}
+//   if (config.domain) settings['domain'] = config.domain
+//   if (config.region) settings['region'] = config.region
+//   if (config.uploadDir) settings['uploadDir'] = config.uploadDir
+//
+//   fs.writeFile('.s3-website.json', JSON.stringify(settings), cb)
+// }
 
 function getConfig (path, fromCL, cb) {
   fs.readFile(path, function (err, data) {
@@ -268,8 +269,7 @@ function getConfig (path, fromCL, cb) {
       return fromFile[key] !== fromCL[key];
     })
 
-    var config = Object.assign(fromFile, fromCL); // Merge arguments and file parameters
-
+    var config = Object.assign(defaultConfig, fromFile, fromCL); // Merge arguments and file parameters
     if(dirty){ // Somethign has changed rewrite file
       fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
         if(err) console.error(err);
