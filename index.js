@@ -11,6 +11,7 @@ var fs = require('fs')
 var glob = require('glob')
 var mime = require('mime')
 var dotenv = require('dotenv').config({silent:true});
+var s3diff = require('s3-diff');
 
 var defaultConfig = {
   index: 'index.html'
@@ -347,9 +348,9 @@ function putWebsiteContent(s3, config, cb){
 
   var options = {};
   var pattern = (config.uploadDir || '.') + "/**/*";
-  var s3diff = require('s3-diff');
-    s3diff({
+  s3diff({
     aws: {
+      signatureVersion: 'v4'
     },
     local: config.uploadDir,
     remote: {
