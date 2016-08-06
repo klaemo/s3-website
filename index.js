@@ -246,16 +246,6 @@ function validateProps (obj, props, idx) {
   })
 }
 
-// function writeConfig (config, cb) {
-//   if (typeof cb !== 'function') { cb = function () {} }
-//   var settings = {}
-//   if (config.domain) settings['domain'] = config.domain
-//   if (config.region) settings['region'] = config.region
-//   if (config.uploadDir) settings['uploadDir'] = config.uploadDir
-//
-//   fs.writeFile('.s3-website.json', JSON.stringify(settings), cb)
-// }
-
 function getConfig (path, fromCL, cb) {
   fs.readFile(path, function (err, data) {
     var fromFile;
