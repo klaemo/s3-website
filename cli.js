@@ -62,7 +62,16 @@ program
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
   .action(function (uploadDir, options) {
-    getConfig('.s3-website.json', function (err, config) { // eslint-disable-line handle-callback-err
+     var fromCLKeys = Object.keys(options).filter(function(item){
+       var toRemove = ['commands', 'parent', 'options']
+       if(item.startsWith('_')) return false
+       return toRemove.indexOf(item) < 0
+     })
+     var fromCL = {};
+     fromCLKeys.forEach(function(key){fromCL[key] = options[key]});
+     fromCL['uploadDir'] = uploadDir;
+
+    getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       if (!config) config = {}
       if (options.region) config.region = options.region
       if (options.domain) config.domain = options.domain
