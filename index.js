@@ -320,11 +320,26 @@ function putWebsiteContent(s3, config, cb){
     };
 
     function printResults(results){
-      debugger;
-      results.uploaded.forEach(function(){});
-      results.updated.forEach(function(){});
-      results.removed.forEach(function(){});
-      results.errors.forEach(function(){});
+      results.errors.forEach(function(){
+        console.log("Error uploading: " + file);
+      });
+      results.removed.forEach(function(){
+        console.log("Removed: " + file);
+      });
+      results.uploaded.forEach(function(file){
+        console.log("Uploaded: " + file);
+      });
+      results.updated.forEach(function(){
+        console.log("Updated: " + file);
+      });
+
+      var isEmpty = Object.keys(results).reduce(function(prev, current){
+        if(current.length > 0){return true;}
+        else return prev;
+      }, false);
+      if(isEmpty){
+        console.log("There was nothing to push");
+      }
     }
 
     function checkDone(allFiles, results, cb){
@@ -369,6 +384,7 @@ function putWebsiteContent(s3, config, cb){
         checkDone(data, results, cb);
       });
     });
+    checkDone(data, results, cb);
   });
 
 
