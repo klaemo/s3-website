@@ -56,8 +56,8 @@ program
   })
 
 program
-  .command('deploy <upload-dir>')
-  .usage('<dir> [options]')
+  .command('deploy [upload-dir]')
+  .usage('[dir] [options]')
   .description('Will push contents of directory to specified s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
