@@ -5,9 +5,9 @@ var s3Website = require('./')
 var program = require('commander')
 var url = require('url')
 
-var s3site = s3Website.s3site;
-var deploy = s3Website.deploy;
-var getConfig = s3Website.config;
+var s3site = s3Website.s3site
+var deploy = s3Website.deploy
+var getConfig = s3Website.config
 
 program
   .usage(':Use one of commands below to create an s3-website or deploy content to an existing bucket.\n' +
@@ -32,9 +32,9 @@ program
   .option('-n, --cert-name <certificate name>', 'A unique name for the server certificate.')
   .option('-u, --upload-dir <upload directory>', 'Upload contents of directory to s3 site.')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
-  .action(function(domain, options){
+  .action(function (domain, options) {
     options.domain = domain
-    s3site(options, function(err, website) {
+    s3site(options, function (err, website) {
       if (err) {
         if (options.json) {
           console.error(JSON.stringify({ code: err.code, message: err.message }))
@@ -62,44 +62,43 @@ program
   .description('Will push contents of directory to specified s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
-  .action(function(uploadDir, options){
-    getConfig('.s3-website.json', function(err, config){
-      if(!config) config = {};
-      if(options.region) config.region = options.region;
-      if(options.domain) config.domain = options.domain;
-      if(uploadDir) config.uploadDir = uploadDir
+  .action(function (uploadDir, options) {
+    getConfig('.s3-website.json', function (err, config) { // eslint-disable-line handle-callback-err
+      if (!config) config = {}
+      if (options.region) config.region = options.region
+      if (options.domain) config.domain = options.domain
+      if (uploadDir) config.uploadDir = uploadDir
 
       var s3 = new AWS.S3({ region: config.region })
-      deploy(s3, config, function(err, files){
-        if(err){
-          console.error('\n' + err.message + '\n');
+      deploy(s3, config, function (err, files) {
+        if (err) {
+          console.error('\n' + err.message + '\n')
           process.exit(1)
         }
       })
     })
   })
-  .on('--help', function(){
+  .on('--help', function () {
     console.log(' ')
-    console.log("Deploy requires 3 things: ")
-    console.log("region: the region where your bucket lives, can be set by commandline flag or in config file")
-    console.log("domain: the name of your bucket, can be set by commandline flag or in config file")
-    console.log("uploadDir: the name of the directory whose contents you want to upload," +
-      "can be supplied as first argument to deploy or in config file")
+    console.log('Deploy requires 3 things: ')
+    console.log('region: the region where your bucket lives, can be set by commandline flag or in config file')
+    console.log('domain: the name of your bucket, can be set by commandline flag or in config file')
+    console.log('uploadDir: the name of the directory whose contents you want to upload,' +
+      'can be supplied as first argument to deploy or in config file')
     console.log(' ')
-    console.log("These can be supplied as command line arguments, or in a json config file")
+    console.log('These can be supplied as command line arguments, or in a json config file')
     console.log(' ')
-    console.log("Config file: ")
-    console.log("Should be titled .s3-website.json")
-    console.log("should contain only a JSON object with keys: region, domain, uploadDir")
-  });
+    console.log('Config file: ')
+    console.log('Should be titled .s3-website.json')
+    console.log('should contain only a JSON object with keys: region, domain, uploadDir')
+  })
 
 program
   .command('*')
   .description('Output usage message')
-  .action(function(env){
-    program.help();
-  });
-
+  .action(function (env) {
+    program.help()
+  })
 
 program.parse(process.argv)
-if(!program.args.length) program.outputHelp()
+if (!program.args.length) program.outputHelp()

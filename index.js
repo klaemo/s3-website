@@ -18,7 +18,7 @@ var defaultConfig = {
 }
 
 var defaultBucketConfig = {
-  Bucket: '', /* required */
+  Bucket: '' /* required */
 }
 
 var defaultWebsiteConfig = {
@@ -30,7 +30,7 @@ var defaultWebsiteConfig = {
   }
 }
 
-function s3site(config, cb) {
+function s3site (config, cb) {
   if (typeof cb !== 'function') cb = function () {}
 
   assert(typeof config === 'object')
@@ -72,32 +72,32 @@ function s3site(config, cb) {
 
   var s3 = new AWS.S3({ region: config.region })
 
-  s3.createBucket(bucketConfig, function(err, bucket) {
+  s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
 
-    setPolicy(s3, config.domain, function(err) {
+    setPolicy(s3, config.domain, function (err) {
       if (err) return cb(err)
-      createWebsite(s3, websiteConfig, config, function(err, website) {
+      createWebsite(s3, websiteConfig, config, function (err, website) {
         if (err) return cb(err)
 
         if (config.cert || config.certId) {
           config.aliases = config.aliases || [ config.domain ]
           config.origin = url.parse(website.url).host
 
-          cloudfront(config, function(err, distribution) {
+          cloudfront(config, function (err, distribution) {
             if (err) return cb(err)
 
             website.url = 'http://' + distribution.url
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
 
-            writeConfig(config, function(err){
-              if(err) return console.error("Error:" + err.message)
+            writeConfig(config, function (err) {
+              if (err) return console.error("Error:" + err.message)
               console.log("Wrote config file: .s3-website.json")
             })
 
-            if(config.uploadDir){
-              return putWebsiteContent(s3, config, function(err, uploadResults){
+            if (config.uploadDir) {
+              return putWebsiteContent(s3, config, function (err, uploadResults) {
                 cb(err, website, uploadResults);
               })
             }
@@ -105,12 +105,12 @@ function s3site(config, cb) {
           })
         } else {
 
-          writeConfig(config, function(err){
-              if(err) return console.error("Error:" + err.message)
+          writeConfig(config, function (err) {
+              if (err) return console.error("Error:" + err.message)
               console.log("Wrote config file: .s3-website.json")
           })
 
-          if(config.uploadDir){
+          if (config.uploadDir) {
             return putWebsiteContent(s3, config, function(err, uploadResults){
               cb(err, website, uploadResults);
             })
@@ -123,8 +123,7 @@ function s3site(config, cb) {
 }
 
 function createWebsite (s3, websiteConfig, config, cb) {
-
-  function parseWebsite(website, modified) {
+  function parseWebsite (website, modified) {
     var host
 
     // Frankfurt has a slightly differnt URL scheme :(
@@ -142,22 +141,22 @@ function createWebsite (s3, websiteConfig, config, cb) {
     return {
       url: siteUrl,
       config: website,
-      modified: modified ? true : false
+      modified: !!modified
     }
   }
 
-  function putWebsite() {
-    s3.putBucketWebsite(websiteConfig, function(err, website) {
+  function putWebsite () {
+    s3.putBucketWebsite(websiteConfig, function (err, website) {
       if (err) return cb(err)
 
-      s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+      s3.getBucketWebsite({ Bucket: config.domain }, function (err, website) {
         if (err) return cb(err)
         cb(null, parseWebsite(website, true))
       })
     })
   }
 
-  s3.getBucketWebsite({ Bucket: config.domain }, function(err, website) {
+  s3.getBucketWebsite({ Bucket: config.domain }, function (err, website) { // eslint-disable-line handle-callback-err
     var dirty = diff(website || {}, websiteConfig.WebsiteConfiguration)
     if (dirty) {
       putWebsite()
@@ -177,7 +176,7 @@ function setPolicy (s3, bucket, cb) {
     Resource: 'arn:aws:s3:::' + bucket + '/*'
   }
 
-  s3.getBucketPolicy({ Bucket: bucket }, function(err, data) {
+  s3.getBucketPolicy({ Bucket: bucket }, function (err, data) {
     if (err && err.code !== 'NoSuchBucketPolicy') return cb(err)
 
     var newPolicy = { Statement: [] }
@@ -190,7 +189,7 @@ function setPolicy (s3, bucket, cb) {
     var found = false
 
     if (oldPolicy) {
-      newPolicy.Statement = oldPolicy.Statement.map(function(item) {
+      newPolicy.Statement = oldPolicy.Statement.map(function (item) {
         if (item.Sid === 'AddPublicReadPermissions') {
           found = true
           return publicRead
@@ -201,7 +200,7 @@ function setPolicy (s3, bucket, cb) {
 
     if (!found) newPolicy.Statement.push(publicRead)
 
-    var dirty = diff(oldPolicy || {}, newPolicy, function(path, key) {
+    var dirty = diff(oldPolicy || {}, newPolicy, function (path, key) {
       if (key === 'Version') return true
     })
 
@@ -214,7 +213,7 @@ function setPolicy (s3, bucket, cb) {
   })
 }
 
-function loadRoutes(routesOrFile) {
+function loadRoutes (routesOrFile) {
   var routes
   if (typeof routesOrFile === 'string') {
     routes = require(path.resolve(__dirname, routesOrFile))
@@ -226,7 +225,7 @@ function loadRoutes(routesOrFile) {
   return routes
 }
 
-function validateRoutes(routes) {
+function validateRoutes (routes) {
   assert(Array.isArray(routes), 'Routes must be an array')
 
   var validProperties = {
@@ -250,7 +249,7 @@ function validateRoutes(routes) {
   })
 }
 
-function validateProps(obj, props, idx) {
+function validateProps (obj, props, idx) {
   var keys = Object.keys(obj)
   assert(keys.length > 0, util.format('Invalid route at index %s', idx))
   keys.forEach(function (key) {
@@ -258,93 +257,93 @@ function validateProps(obj, props, idx) {
   })
 }
 
-function writeConfig(config, cb){
-  if(typeof cb !== "function"){cb = function(){}}
+function writeConfig (config, cb) {
+  if(typeof cb !== "function"){cb = function () {}}
   settings = {}
-  if(config.domain) settings['domain'] = config.domain
-  if(config.region) settings['region'] = config.region
-  if(config.uploadDir) settings['uploadDir'] = config.uploadDir
+  if (config.domain) settings['domain'] = config.domain
+  if (config.region) settings['region'] = config.region
+  if (config.uploadDir) settings['uploadDir'] = config.uploadDir
 
   fs.writeFile(".s3-website.json", JSON.stringify(settings), cb);
 }
 
-function getConfig(path, cb){
-  fs.readFile(path, function(err, data){
-    try{data = JSON.parse(data);}
-    catch(e){}
+function getConfig (path, cb) {
+  fs.readFile(path, function (err, data) {
+    try{
+      data = JSON.parse(data);
+    } catch (e) {}
     cb(err, data);
   });
 }
 
-function deleteFile(s3, config, file, cb){
+function deleteFile (s3, config, file, cb) {
     var params = {
     Bucket: config.domain,
     Key: file,
   }
-  s3.deleteObject(params, function(err, data){
-    if(err && cb){return cb(err);}
-    if(cb){cb(err, data, file);}
+  s3.deleteObject(params, function (err, data) {
+    if (err && cb) {return cb(err);}
+    if (cb) {cb(err, data, file);}
   });
 }
 
-function uploadFile(s3, config, file, cb){
+function uploadFile (s3, config, file, cb) {
   var params = {
     Bucket: config.domain,
     Key:file,
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: mime.lookup(file)
   }
-  s3.putObject(params, function(err, data){
-    if(err && cb){return cb(err);}
-    if(cb){cb(err, data, file);}
+  s3.putObject(params, function (err, data) {
+    if (err && cb) {return cb(err);}
+    if (cb) {cb(err, data, file);}
   });
 }
 
 
-function printResults(err, results, cb){
-  results.errors.forEach(function(file){
+function printResults (err, results, cb) {
+  results.errors.forEach( function (file) {
     console.log("Error uploading: " + file);
   });
-  results.removed.forEach(function(file){
+  results.removed.forEach( function (file) {
     console.log("Removed: " + file);
   });
-  results.uploaded.forEach(function(file){
+  results.uploaded.forEach( function (file) {
     console.log("Uploaded: " + file);
   });
-  results.updated.forEach(function(file){
+  results.updated.forEach( function (file) {
     console.log("Updated: " + file);
   });
 
-  var isEmpty = Object.keys(results).reduce(function(prev, current){
-    if(results[current].length > 0){return false;}
+  var isEmpty = Object.keys(results).reduce( function (prev, current) {
+    if (results[current].length > 0) {return false;}
     return prev;
   }, true);
-  if(isEmpty){
+  if (isEmpty) {
     console.log("There was nothing to push");
   }
   cb(null, results);
 }
 
-function checkDone(allFiles, results, cb){
-  const files = [allFiles.missing, allFiles.changed, allFiles.extra];
-  const finished = [results.uploaded, results.updated, results.removed, results.errors];
-  const totalFiles = files.reduce(function(prev, current){
+function checkDone (allFiles, results, cb) {
+  var files = [allFiles.missing, allFiles.changed, allFiles.extra];
+  var finished = [results.uploaded, results.updated, results.removed, results.errors];
+  var totalFiles = files.reduce(function (prev, current) {
     return prev.concat(current);
   }, []).length;
-  const fileResults = finished.reduce(function(prev, current){
+  var fileResults = finished.reduce(function (prev, current) {
     return prev.concat(current);
   }, []).length;
 
-  if(fileResults >= totalFiles && cb){
+  if (fileResults >= totalFiles && cb) {
     cb(null, results);
   }
 }
 
 
 
-//TODO push changes to s3-diff
-function putWebsiteContent(s3, config, cb){
-  if(typeof cb !== "function"){cb = function(){}}
+function putWebsiteContent (s3, config, cb) {
+  if(typeof cb !== "function"){cb = function () {}}
 
   var options = {};
   var pattern = (config.uploadDir || '.') + "/**/*";
@@ -371,27 +370,27 @@ function putWebsiteContent(s3, config, cb){
     }
 
     // Delete files that exist on s3, but not locally
-    data.missing.forEach(function(file){
-      deleteFile(s3, config, file, function(err, fileData, file){
-        if(err){return errors.push(err);}
+    data.missing.forEach(function(file) {
+      deleteFile(s3, config, file, function (err, fileData, file) {
+        if (err) {return errors.push(err);}
         results.removed.push(file);
         checkDone(data, results, logResults);
       });
     });
 
     // Upload changed files
-    data.changed.forEach(function(file){
-      uploadFile(s3, config, file, function(err, fileData, file){
-        if(err){return errors.push(err);}
+    data.changed.forEach(function (file) {
+      uploadFile(s3, config, file, function (err, fileData, file) {
+        if (err) {return errors.push(err);}
         results.updated.push(file);
         checkDone(data, results, logResults);
       });
     });
 
     // Upload files that exist locally but not on s3
-    data.extra.forEach(function(file){
-      uploadFile(s3, config, file, function(err, fileData, file){
-        if(err){return errors.push(err);}
+    data.extra.forEach(function (file) {
+      uploadFile(s3, config, file, function (err, fileData, file){
+        if (err) {return errors.push(err);}
         results.uploaded.push(file);
         checkDone(data, results, logResults);
       });
