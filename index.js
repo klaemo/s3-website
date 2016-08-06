@@ -90,11 +90,6 @@ function s3site (config, cb) {
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
 
-            writeConfig(config, function (err) {
-              if (err) return console.error('Error:' + err.message)
-              console.log('Wrote config file: .s3-website.json')
-            })
-
             if (config.uploadDir) {
               return putWebsiteContent(s3, config, function (err, uploadResults) {
                 cb(err, website, uploadResults)
@@ -103,11 +98,6 @@ function s3site (config, cb) {
             cb(null, website, {})
           })
         } else {
-          writeConfig(config, function (err) {
-            if (err) return console.error('Error:' + err.message)
-            console.log('Wrote config file: .s3-website.json')
-          })
-
           if (config.uploadDir) {
             return putWebsiteContent(s3, config, function (err, uploadResults) {
               cb(err, website, uploadResults)
@@ -265,12 +255,27 @@ function writeConfig (config, cb) {
   fs.writeFile('.s3-website.json', JSON.stringify(settings), cb)
 }
 
-function getConfig (path, cb) {
+function getConfig (path, fromCL, cb) {
   fs.readFile(path, function (err, data) {
+    var fromFile;
     try {
-      data = JSON.parse(data)
-    } catch (e) { console.error(e) }
-    cb(err, data)
+       fromFile = JSON.parse(data)
+    } catch (e) {}
+
+    var dirty = Object.keys(fromFile).some(function(key){
+      return fromFile[key] !== fromCL[key];
+    })
+
+    var config = Object.assign(fromFile, fromCL);
+    if(dirty){
+      fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
+        if(err) console.error(err);
+        console.log('Wrote config file: .s3-website.json');
+        cb(err, config)
+      })
+    } else {
+      cb(err, config)
+    }
   })
 }
 
@@ -389,11 +394,6 @@ function putWebsiteContent (s3, config, cb) {
         checkDone(data, results, logResults)
       })
     })
-
-    writeConfig(config, function (err) {
-      if (err) return console.error('Error:' + err.message)
-      console.log('Wrote config file: .s3-website.json')
-    });
     checkDone(data, results, logResults)
   })
 }
