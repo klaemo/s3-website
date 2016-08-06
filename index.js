@@ -46,7 +46,7 @@ function s3site (config, cb) {
     websiteConfig.Bucket = config.domain
   }
 
-  if (config.region) {
+  if (config.region && config.region !== 'us-east-1') { // LocationConstraint for default location is invalid
     bucketConfig.CreateBucketConfiguration = { LocationConstraint: config.region }
   } else {
     config.region = defaultConfig.region

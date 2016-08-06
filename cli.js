@@ -30,8 +30,8 @@ program
   .version(require('./package.json').version)
 
 program
-  .command('create <domain>')
-  .usage('<domain> [options]')
+  .command('create [domain]')
+  .usage('[domain [options]]')
   .description('Will create and configure an s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-i, --index <index>', 'Index Document [index.html].')
