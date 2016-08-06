@@ -8,9 +8,9 @@ var cloudfront = require('cloudfront-tls')
 var diff = require('deep-diff').diff
 var assign = require('object-assign')
 var fs = require('fs')
-var glob = require('glob')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
+var s3diff = require('s3-diff')
 
 var defaultConfig = {
   index: 'index.html'
@@ -96,9 +96,11 @@ function s3site (config, cb) {
             })
 
             if (config.uploadDir) {
-              return putWebsiteContent(s3, config, function (err) { cb(err, website) })
+              return putWebsiteContent(s3, config, function (err, uploadResults) {
+                cb(err, website, uploadResults)
+              })
             }
-            cb(null, website)
+            cb(null, website, {})
           })
         } else {
           writeConfig(config, function (err) {
@@ -107,9 +109,11 @@ function s3site (config, cb) {
           })
 
           if (config.uploadDir) {
-            return putWebsiteContent(s3, config, function (err) { cb(err, website) })
+            return putWebsiteContent(s3, config, function (err, uploadResults) {
+              cb(err, website, uploadResults)
+            })
           }
-          cb(null, website)
+          cb(null, website, {})
         }
       })
     })
@@ -252,9 +256,8 @@ function validateProps (obj, props, idx) {
 }
 
 function writeConfig (config, cb) {
-  if (typeof cb !== 'function') cb = function () {}
+  if (typeof cb !== 'function') { cb = function () {} }
   var settings = {}
-
   if (config.domain) settings['domain'] = config.domain
   if (config.region) settings['region'] = config.region
   if (config.uploadDir) settings['uploadDir'] = config.uploadDir
@@ -266,45 +269,127 @@ function getConfig (path, cb) {
   fs.readFile(path, function (err, data) {
     try {
       data = JSON.parse(data)
-    } catch (e) {}
+    } catch (e) { console.error(e) }
     cb(err, data)
   })
 }
 
+function deleteFile (s3, config, file, cb) {
+  var params = {
+    Bucket: config.domain,
+    Key: file
+  }
+  s3.deleteObject(params, function (err, data) {
+    if (err && cb) { return cb(err) }
+    if (cb) { cb(err, data, file) }
+  })
+}
+
+function uploadFile (s3, config, file, cb) {
+  var params = {
+    Bucket: config.domain,
+    Key: file,
+    Body: fs.createReadStream(path.join(config.uploadDir, file)),
+    ContentType: mime.lookup(file)
+  }
+  s3.putObject(params, function (err, data) {
+    if (err && cb) { return cb(err) }
+    if (cb) { cb(err, data, file) }
+  })
+}
+
+function printResults (err, results, cb) {
+  if (err) return cb(err)
+  results.errors.forEach(function (file) {
+    console.log('Error uploading: ' + file)
+  })
+  results.removed.forEach(function (file) {
+    console.log('Removed: ' + file)
+  })
+  results.uploaded.forEach(function (file) {
+    console.log('Uploaded: ' + file)
+  })
+  results.updated.forEach(function (file) {
+    console.log('Updated: ' + file)
+  })
+
+  var isEmpty = Object.keys(results).reduce(function (prev, current) {
+    if (results[current].length > 0) { return false }
+    return prev
+  }, true)
+  if (isEmpty) {
+    console.log('There was nothing to push')
+  }
+  cb(null, results)
+}
+
+function checkDone (allFiles, results, cb) {
+  var files = [allFiles.missing, allFiles.changed, allFiles.extra]
+  var finished = [results.uploaded, results.updated, results.removed, results.errors]
+  var totalFiles = files.reduce(function (prev, current) {
+    return prev.concat(current)
+  }, []).length
+  var fileResults = finished.reduce(function (prev, current) {
+    return prev.concat(current)
+  }, []).length
+
+  if (fileResults >= totalFiles && cb) {
+    cb(null, results)
+  }
+}
+
 function putWebsiteContent (s3, config, cb) {
-  if (typeof cb !== 'function') cb = function () {}
+  if (typeof cb !== 'function') { cb = function () {} }
 
-  var options = {}
-  var pattern = (config.uploadDir || '.') + '/**/*'
-
-  glob(pattern, options, function (err, files) {
+  s3diff({
+    aws: {
+      signatureVersion: 'v4'
+    },
+    local: config.uploadDir || '.',
+    remote: {
+      bucket: config.domain,
+      prefix: ''
+    }
+  }, function (err, data) {
     if (err) return cb(err)
+    var results = {
+      uploaded: [],
+      updated: [],
+      removed: [],
+      errors: []
+    }
 
-    var uploaded = 0
-    var toUpload = files.filter(function (item) {
-      return fs.statSync(item).isFile()
-    }).length
+    function logResults (err, results) {
+      printResults(err, results, cb)
+    }
 
-    files.forEach(function (file) {
-      fs.stat(file, function (err, stat) {
-        if (err) return cb(err)
-        if (stat.isFile()) {
-          var params = {
-            Bucket: config.domain,
-            Key: path.relative(config.uploadDir, file),
-            Body: fs.createReadStream(file),
-            ContentType: mime.lookup(file)
-          }
-
-          s3.putObject(params, function (err, data) {
-            if (err) return cb(err)
-            console.log('Uploaded: ' + params['Key'])
-            uploaded++
-            if (uploaded === toUpload) cb(null, files)
-          })
-        }
+    // Delete files that exist on s3, but not locally
+    data.missing.forEach(function (file) {
+      deleteFile(s3, config, file, function (err, fileData, file) {
+        if (err) { return results.errors.push(err) }
+        results.removed.push(file)
+        checkDone(data, results, logResults)
       })
     })
+
+    // Upload changed files
+    data.changed.forEach(function (file) {
+      uploadFile(s3, config, file, function (err, fileData, file) {
+        if (err) { return results.errors.push(err) }
+        results.updated.push(file)
+        checkDone(data, results, logResults)
+      })
+    })
+
+    // Upload files that exist locally but not on s3
+    data.extra.forEach(function (file) {
+      uploadFile(s3, config, file, function (err, fileData, file) {
+        if (err) { return results.errors.push(err) }
+        results.uploaded.push(file)
+        checkDone(data, results, logResults)
+      })
+    })
+    checkDone(data, results, logResults)
   })
 }
 
