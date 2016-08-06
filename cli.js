@@ -8,6 +8,19 @@ var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
 
+function getCLArguments(params, options){
+   var fromCL = {};
+   var fromCLKeys = Object.keys(options).filter(function(item){
+     var toRemove = ['commands', 'parent', 'options']
+     if(item.startsWith('_')) return false
+     return toRemove.indexOf(item) < 0
+   });
+   var paramKeys = Object.keys(params);
+   fromCLKeys.forEach(function(key){fromCL[key] = options[key]});
+   paramKeys.forEach(function(key){fromCL[key] = params[key]});
+   return fromCL;
+}
+
 program
   .usage(':Use one of commands below to create an s3-website or deploy content to an existing bucket.\n' +
     '\n  Credentials: Aws Credentials should either be supplied in a local .env file or in ~/.aws/credentials\n' +
@@ -62,31 +75,22 @@ program
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
   .action(function (uploadDir, options) {
-     var fromCLKeys = Object.keys(options).filter(function(item){
-       var toRemove = ['commands', 'parent', 'options']
-       if(item.startsWith('_')) return false
-       return toRemove.indexOf(item) < 0
-     })
-     var fromCL = {};
-     fromCLKeys.forEach(function(key){fromCL[key] = options[key]});
-     fromCL['uploadDir'] = uploadDir;
+     var fromCL = getCLArguments({uploadDir: uploadDir}, options);
+     getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
+        if (!config) config = {}
+        if (options.region) config.region = options.region
+        if (options.domain) config.domain = options.domain
+        if (uploadDir) config.uploadDir = uploadDir
 
-    getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
-      if (!config) config = {}
-      if (options.region) config.region = options.region
-      if (options.domain) config.domain = options.domain
-      if (uploadDir) config.uploadDir = uploadDir
-
-      var s3 = new AWS.S3({ region: config.region })
-      deploy(s3, config, function (err, files) {
-        if (err) {
-          console.error('\n' + err.message + '\n')
-          process.exit(1)
-        }
+        var s3 = new AWS.S3({ region: config.region })
+        deploy(s3, config, function (err, files) {
+          if (err) {
+            console.error('\n' + err.message + '\n')
+            process.exit(1)
+          }
+        })
       })
-    })
-  })
-  .on('--help', function () {
+    }).on('--help', function () {
     console.log(' ')
     console.log('Deploy requires 3 things: ')
     console.log('region: the region where your bucket lives, can be set by commandline flag or in config file')
