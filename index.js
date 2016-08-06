@@ -341,12 +341,11 @@ function checkDone (allFiles, results, cb) {
 function putWebsiteContent (s3, config, cb) {
   if (typeof cb !== 'function') { cb = function () {} }
 
-  var pattern = (config.uploadDir || '.') + '/**/*'
   s3diff({
     aws: {
       signatureVersion: 'v4'
     },
-    local: pattern,
+    local: config.uploadDir || '.',
     remote: {
       bucket: config.domain,
       prefix: ''
