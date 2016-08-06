@@ -298,7 +298,7 @@ function uploadFile (s3, config, file, cb) {
   })
 }
 
-function printResults (err, results, cb) {
+function handleResults (err, results, cb) {
   if (err) return cb(err)
   results.errors.forEach(function (file) {
     console.log('Error uploading: ' + file)
@@ -360,7 +360,7 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     function logResults (err, results) {
-      printResults(err, results, cb)
+      handleResults(err, results, cb)
     }
 
     // Delete files that exist on s3, but not locally
@@ -389,6 +389,11 @@ function putWebsiteContent (s3, config, cb) {
         checkDone(data, results, logResults)
       })
     })
+
+    writeConfig(config, function (err) {
+      if (err) return console.error('Error:' + err.message)
+      console.log('Wrote config file: .s3-website.json')
+    });
     checkDone(data, results, logResults)
   })
 }
