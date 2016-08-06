@@ -259,21 +259,24 @@ function getConfig (path, fromCL, cb) {
   fs.readFile(path, function (err, data) {
     var fromFile;
     try {
-       fromFile = JSON.parse(data)
-    } catch (e) {}
+       fromFile = JSON.parse(data); // Read data from file
+    } catch (e) {
+      fromFile = {};
+    }
 
-    var dirty = Object.keys(fromFile).some(function(key){
+    var dirty = Object.keys(fromCL).some(function(key){ // Test if anything has changed
       return fromFile[key] !== fromCL[key];
     })
 
-    var config = Object.assign(fromFile, fromCL);
-    if(dirty){
+    var config = Object.assign(fromFile, fromCL); // Merge arguments and file parameters
+
+    if(dirty){ // Somethign has changed rewrite file
       fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
         if(err) console.error(err);
         console.log('Wrote config file: .s3-website.json');
         cb(err, config)
       })
-    } else {
+    } else { // No change, we're done
       cb(err, config)
     }
   })
