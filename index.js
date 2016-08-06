@@ -295,6 +295,49 @@ function uploadFile(s3, config, file, cb){
   });
 }
 
+
+function printResults(err, results, cb){
+  results.errors.forEach(function(file){
+    console.log("Error uploading: " + file);
+  });
+  results.removed.forEach(function(file){
+    console.log("Removed: " + file);
+  });
+  results.uploaded.forEach(function(file){
+    console.log("Uploaded: " + file);
+  });
+  results.updated.forEach(function(file){
+    console.log("Updated: " + file);
+  });
+
+  var isEmpty = Object.keys(results).reduce(function(prev, current){
+    if(results[current].length > 0){return false;}
+    return prev;
+  }, true);
+  if(isEmpty){
+    console.log("There was nothing to push");
+  }
+
+
+}
+
+function checkDone(allFiles, results, cb){
+  const files = [allFiles.missing, allFiles.changed, allFiles.extra];
+  const finished = [results.uploaded, results.updated, results.removed, results.errors];
+  const totalFiles = files.reduce(function(prev, current){
+    return prev.concat(current);
+  }, []).length;
+  const fileResults = finished.reduce(function(prev, current){
+    return prev.concat(current);
+  }, []).length;
+
+  if(fileResults >= totalFiles && cb){
+    cb(null, results);
+  }
+}
+
+
+
 //TODO push changes to s3-diff
 function putWebsiteContent(s3, config, cb){
   if(typeof cb !== "function"){cb = function(){}}
@@ -319,43 +362,8 @@ function putWebsiteContent(s3, config, cb){
       errors:[]
     };
 
-    function printResults(results){
-      results.errors.forEach(function(file){
-        console.log("Error uploading: " + file);
-      });
-      results.removed.forEach(function(file){
-        console.log("Removed: " + file);
-      });
-      results.uploaded.forEach(function(file){
-        console.log("Uploaded: " + file);
-      });
-      results.updated.forEach(function(file){
-        console.log("Updated: " + file);
-      });
-
-      var isEmpty = Object.keys(results).reduce(function(prev, current){
-        if(results[current].length > 0){return false;}
-        return prev;
-      }, true);
-      if(isEmpty){
-        console.log("There was nothing to push");
-      }
-    }
-
-    function checkDone(allFiles, results, cb){
-      const files = [allFiles.missing, allFiles.changed, allFiles.extra];
-      const finished = [results.uploaded, results.updated, results.removed, results.errors];
-      const totalFiles = files.reduce(function(prev, current){
-        return prev.concat(current);
-      }, []).length;
-      const fileResults = finished.reduce(function(prev, current){
-        return prev.concat(current);
-      }, []).length;
-
-      if(fileResults >= totalFiles && cb){
-        printResults(results);
-        cb(null, results);
-      }
+    function logResults(err, results){
+      printResults(err, results, cb);
     }
 
     // Delete files that exist on s3, but not locally
@@ -363,7 +371,7 @@ function putWebsiteContent(s3, config, cb){
       deleteFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
         results.removed.push(file);
-        checkDone(data, results, cb);
+        checkDone(data, results, logResults);
       });
     });
 
@@ -372,7 +380,7 @@ function putWebsiteContent(s3, config, cb){
       uploadFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
         results.updated.push(file);
-        checkDone(data, results, cb);
+        checkDone(data, results, logResults);
       });
     });
 
@@ -381,10 +389,10 @@ function putWebsiteContent(s3, config, cb){
       uploadFile(s3, config, file, function(err, fileData, file){
         if(err){return errors.push(err);}
         results.uploaded.push(file);
-        checkDone(data, results, cb);
+        checkDone(data, results, logResults);
       });
     });
-    checkDone(data, results, cb);
+    checkDone(data, results, logResults);
   });
 }
 
