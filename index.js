@@ -263,7 +263,7 @@ function getConfig (path, fromCL, cb) {
     if(dirty){ // Somethign has changed rewrite file
       fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
         if(err) console.error(err);
-        console.log('Wrote config file: .s3-website.json');
+        console.log('Updated config file: .s3-website.json');
         cb(err, config)
       })
     } else { // No change, we're done
