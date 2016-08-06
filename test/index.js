@@ -107,7 +107,6 @@ test('update website', function (t) {
   })
 })
 
-
 function cleanup (bucket, cb) {
   var s3 = new AWS.S3({ region: config.region })
 
