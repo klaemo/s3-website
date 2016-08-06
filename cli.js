@@ -4,7 +4,6 @@ var AWS = require('aws-sdk')
 var s3Website = require('./')
 var program = require('commander')
 var url = require('url')
-
 var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config

@@ -9,10 +9,8 @@ var diff = require('deep-diff').diff
 var assign = require('object-assign')
 var fs = require('fs')
 var mime = require('mime')
-var dotenv = require('dotenv')
+require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
-
-dotenv.config({silent: true})
 
 var defaultConfig = {
   index: 'index.html'
