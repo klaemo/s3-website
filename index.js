@@ -96,9 +96,11 @@ function s3site(config, cb) {
             })
 
             if(config.uploadDir){
-              return putWebsiteContent(s3, config, function(err){cb(err, website);})
+              return putWebsiteContent(s3, config, function(err, uploadResults){
+                cb(err, website, uploadResults);
+              })
             }
-            cb(null, website)
+            cb(null, website, {})
           })
         } else {
 
@@ -108,9 +110,11 @@ function s3site(config, cb) {
           })
 
           if(config.uploadDir){
-            return putWebsiteContent(s3, config, function(err){cb(err, website);})
+            return putWebsiteContent(s3, config, function(err, uploadResults){
+              cb(err, website, uploadResults);
+            })
           }
-          cb(null, website)
+          cb(null, website, {})
         }
       })
     })
@@ -317,8 +321,7 @@ function printResults(err, results, cb){
   if(isEmpty){
     console.log("There was nothing to push");
   }
-
-
+  cb(null, results);
 }
 
 function checkDone(allFiles, results, cb){
