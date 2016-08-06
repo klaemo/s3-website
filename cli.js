@@ -16,8 +16,8 @@ function getCLArguments(params, options){
      return toRemove.indexOf(item) < 0
    });
    var paramKeys = Object.keys(params);
-   fromCLKeys.forEach(function(key){fromCL[key] = options[key]});
-   paramKeys.forEach(function(key){fromCL[key] = params[key]});
+   fromCLKeys.forEach(function(key){if(options[key]) fromCL[key] = options[key]});
+   paramKeys.forEach(function(key){if(params[key]) fromCL[key] = params[key]});
    return fromCL;
 }
 
@@ -45,27 +45,29 @@ program
   .option('-u, --upload-dir <upload directory>', 'Upload contents of directory to s3 site.')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .action(function (domain, options) {
-    options.domain = domain
-    s3site(options, function (err, website) {
-      if (err) {
+    var args = getCLArguments({domain: domain}, options);
+    getConfig('.s3-website.json', args, function (err, config) { // eslint-disable-line handle-callback-err
+      s3site(config, function (err, website) {
+        if (err) {
+          if (options.json) {
+            console.error(JSON.stringify({ code: err.code, message: err.message }))
+          } else {
+            console.error('Error:', err.message)
+          }
+          process.exit(1)
+        }
         if (options.json) {
-          console.error(JSON.stringify({ code: err.code, message: err.message }))
+          console.log(JSON.stringify(website))
         } else {
-          console.error('Error:', err.message)
+          console.log('Successfully created your website.\n')
+          console.log('URL:\n  ' + website.url + '\n')
+          console.log('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+          if (website.certId) {
+            console.log('Certificate ID:\n  ' + website.certId + '\n')
+          }
         }
-        process.exit(1)
-      }
-      if (options.json) {
-        console.log(JSON.stringify(website))
-      } else {
-        console.log('Successfully created your website.\n')
-        console.log('URL:\n  ' + website.url + '\n')
-        console.log('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
-        if (website.certId) {
-          console.log('Certificate ID:\n  ' + website.certId + '\n')
-        }
-      }
-    })
+      })
+    });
   })
 
 program
