@@ -261,6 +261,12 @@ function getConfig (path, fromCL, cb) {
     })
 
     var config = Object.assign(defaultConfig, fromFile, fromCL); // Merge arguments and file parameters
+
+    if(!config.domain){
+      console.log("No bucket was specified. Check your config file .s3-website.json")
+      return;
+    }
+
     if(dirty && !config.lockConfig){ // Something has changed rewrite file, and we are allowed to write config file
       fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
         if(err) console.error(err);
