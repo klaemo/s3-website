@@ -296,32 +296,6 @@ function uploadFile (s3, config, file, cb) {
   })
 }
 
-function handleResults (err, results, message, cb) {
-  if (err) return cb(err)
-  results.errors.forEach(function (file) {
-    console.log('Error uploading: ' + file)
-  })
-  results.removed.forEach(function (file) {
-    console.log('Removed: ' + file)
-  })
-  results.uploaded.forEach(function (file) {
-    console.log('Uploaded: ' + file)
-  })
-  results.updated.forEach(function (file) {
-    console.log('Updated: ' + file)
-  })
-
-  var isEmpty = Object.keys(results).reduce(function (prev, current) {
-    if (results[current].length > 0) { return false }
-    return prev
-  }, true)
-
-  if (isEmpty) { console.log('There was nothing to push') }
-  else {if( message ) console.log(message)}
-
-  cb(null, results)
-}
-
 function checkDone (allFiles, results, cb) {
   var files = [allFiles.missing, allFiles.changed, allFiles.extra]
   var finished = [results.uploaded, results.updated, results.removed, results.errors]
@@ -359,14 +333,10 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     function logResults (err, results) {
-      var params = {
-        Bucket: config.domain
-      };
+      var params = { Bucket: config.domain };
       s3.getBucketWebsite(params, function(err, website) {
         if (err) {return cb(err);}
-        var site = parseWebsite(website, null, config);
-        if(site.url) { var message = "Updated your site: " + site.url;}
-        handleResults(err, results, message, cb)
+        cb(err, results, parseWebsite(website, null, config))
       });
     }
 

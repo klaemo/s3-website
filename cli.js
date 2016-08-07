@@ -21,6 +21,34 @@ function getCLArguments(params, options){
    return fromCL;
 }
 
+function printDeployResults (err, results, website) {
+  if (err) {
+    console.error(err.message);
+    process.exit(1)
+  }
+
+  results.errors.forEach(function (file) {
+    console.log('Error uploading: ' + file)
+  })
+  results.removed.forEach(function (file) {
+    console.log('Removed file: ' + file)
+  })
+  results.uploaded.forEach(function (file) {
+    console.log('Uploaded file: ' + file)
+  })
+  results.updated.forEach(function (file) {
+    console.log('Updated file: ' + file)
+  })
+
+  var isEmpty = Object.keys(results).reduce(function (prev, current) {
+    if (results[current].length > 0) { return false }
+    return prev
+  }, true)
+
+  if (isEmpty) { console.log('There was nothing to push') }
+  else {if( website.url ) console.log('Updated site: ' + website.url)}
+}
+
 program
   .usage(':Use one of commands below to create an s3-website or deploy content to an existing bucket.\n' +
     '\n  Credentials: Aws Credentials should either be supplied in a local .env file or in ~/.aws/credentials\n' +
@@ -85,12 +113,7 @@ program
         if (uploadDir) config.uploadDir = uploadDir
 
         var s3 = new AWS.S3({ region: config.region })
-        deploy(s3, config, function (err, files) {
-          if (err) {
-            console.error('\n' + err.message + '\n')
-            process.exit(1)
-          }
-        })
+        deploy(s3, config, printDeployResults)
       })
     }).on('--help', function () {
     console.log(' ')
