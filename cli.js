@@ -8,6 +8,7 @@ var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
 
+// Filter out commander specific properties from options hash. 
 function getCLArguments(params, options){
    var fromCL = {};
    var fromCLKeys = Object.keys(options).filter(function(item){
