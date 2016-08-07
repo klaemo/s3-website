@@ -14,7 +14,8 @@ var s3diff = require('s3-diff')
 
 var defaultConfig = {
   index: 'index.html',
-  region: 'us-east-1'
+  region: 'us-east-1',
+  uploadDir: '.'
 }
 
 var defaultBucketConfig = {
@@ -70,7 +71,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region })
+  var s3 = new AWS.S3({ region: config.region, signatureVersion: 'v4' })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
@@ -100,7 +101,7 @@ function s3site (config, cb) {
           })
         } else {
           if (config.uploadDir) {
-            return putWebsiteContent(s3, config, function (err, uploadResults) {
+            return putWebsiteContent(s3, config, function (err, website, uploadResults) {
               cb(err, website, uploadResults)
             })
           }
@@ -260,7 +261,7 @@ function getConfig (path, fromCL, cb) {
     })
 
     var config = Object.assign(defaultConfig, fromFile, fromCL); // Merge arguments and file parameters
-    if(dirty){ // Somethign has changed rewrite file
+    if(dirty && !config.lockConfig){ // Something has changed rewrite file, and we are allowed to write config file
       fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
         if(err) console.error(err);
         console.log('Updated config file: .s3-website.json');
@@ -336,7 +337,7 @@ function putWebsiteContent (s3, config, cb) {
       var params = { Bucket: config.domain };
       s3.getBucketWebsite(params, function(err, website) {
         if (err) {return cb(err);}
-        cb(err, results, parseWebsite(website, null, config))
+        cb(err, parseWebsite(website, null, config), results)
       });
     }
 

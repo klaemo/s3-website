@@ -8,7 +8,10 @@ var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
 
-// Filter out commander specific properties from options hash. 
+/**
+* Filter out commander specific properties from options hash, and merge command
+* line parameters into single hash.
+*/
 function getCLArguments(params, options){
    var fromCL = {};
    var fromCLKeys = Object.keys(options).filter(function(item){
@@ -22,7 +25,7 @@ function getCLArguments(params, options){
    return fromCL;
 }
 
-function printDeployResults (err, results, website) {
+function printDeployResults (err, website, results) {
   if (err) {
     console.error(err.message);
     process.exit(1)
@@ -72,11 +75,12 @@ program
   .option('-k, --key <key>', 'Path to the private key.')
   .option('-n, --cert-name <certificate name>', 'A unique name for the server certificate.')
   .option('-u, --upload-dir <upload directory>', 'Upload contents of directory to s3 site.')
+  .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .action(function (domain, options) {
     var args = getCLArguments({domain: domain}, options);
     getConfig('.s3-website.json', args, function (err, config) { // eslint-disable-line handle-callback-err
-      s3site(config, function (err, website) {
+      s3site(config, function (err, website, uploadResults) {
         if (err) {
           if (options.json) {
             console.error(JSON.stringify({ code: err.code, message: err.message }))
@@ -94,6 +98,7 @@ program
           if (website.certId) {
             console.log('Certificate ID:\n  ' + website.certId + '\n')
           }
+          printDeployResults(null, website, uploadResults)
         }
       })
     });
@@ -105,14 +110,10 @@ program
   .description('Will push contents of directory to specified s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
+  .option('-l, --lock-config', 'Will prevent config file from being changed')
   .action(function (uploadDir, options) {
      var fromCL = getCLArguments({uploadDir: uploadDir}, options);
      getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
-        if (!config) config = {}
-        if (options.region) config.region = options.region
-        if (options.domain) config.domain = options.domain
-        if (uploadDir) config.uploadDir = uploadDir
-
         var s3 = new AWS.S3({ region: config.region })
         deploy(s3, config, printDeployResults)
       })
