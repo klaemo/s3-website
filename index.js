@@ -111,36 +111,36 @@ function s3site (config, cb) {
   })
 }
 
-function createWebsite (s3, websiteConfig, config, cb) {
-  function parseWebsite (website, modified) {
-    var host
+function parseWebsite (website, modified, config) {
+  var host
 
-    // Frankfurt has a slightly differnt URL scheme :(
-    if (config.region === 'eu-central-1') {
-      host = [config.domain, 's3-website', config.region, 'amazonaws.com'].join('.')
-    } else {
-      host = [config.domain, 's3-website-' + config.region, 'amazonaws.com'].join('.')
-    }
-
-    var siteUrl = url.format({
-      protocol: 'http',
-      host: host
-    })
-
-    return {
-      url: siteUrl,
-      config: website,
-      modified: !!modified
-    }
+  // Frankfurt has a slightly differnt URL scheme :(
+  if (config.region === 'eu-central-1') {
+    host = [config.domain, 's3-website', config.region, 'amazonaws.com'].join('.')
+  } else {
+    host = [config.domain, 's3-website-' + config.region, 'amazonaws.com'].join('.')
   }
 
+  var siteUrl = url.format({
+    protocol: 'http',
+    host: host
+  })
+
+  return {
+    url: siteUrl,
+    config: website,
+    modified: !!modified
+  }
+}
+
+function createWebsite (s3, websiteConfig, config, cb) {
   function putWebsite () {
     s3.putBucketWebsite(websiteConfig, function (err, website) {
       if (err) return cb(err)
 
       s3.getBucketWebsite({ Bucket: config.domain }, function (err, website) {
         if (err) return cb(err)
-        cb(null, parseWebsite(website, true))
+        cb(null, parseWebsite(website, true, config))
       })
     })
   }
@@ -150,7 +150,7 @@ function createWebsite (s3, websiteConfig, config, cb) {
     if (dirty) {
       putWebsite()
     } else {
-      cb(null, parseWebsite(website))
+      cb(null, parseWebsite(website, null, config))
     }
   })
 }
@@ -296,7 +296,7 @@ function uploadFile (s3, config, file, cb) {
   })
 }
 
-function handleResults (err, results, cb) {
+function handleResults (err, results, message, cb) {
   if (err) return cb(err)
   results.errors.forEach(function (file) {
     console.log('Error uploading: ' + file)
@@ -315,9 +315,10 @@ function handleResults (err, results, cb) {
     if (results[current].length > 0) { return false }
     return prev
   }, true)
-  if (isEmpty) {
-    console.log('There was nothing to push')
-  }
+
+  if (isEmpty) { console.log('There was nothing to push') }
+  else {if( message ) console.log(message)}
+
   cb(null, results)
 }
 
@@ -358,7 +359,15 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     function logResults (err, results) {
-      handleResults(err, results, cb)
+      var params = {
+        Bucket: config.domain
+      };
+      s3.getBucketWebsite(params, function(err, website) {
+        if (err) {return cb(err);}
+        var site = parseWebsite(website, null, config);
+        if(site.url) { var message = "Updated your site: " + site.url;}
+        handleResults(err, results, message, cb)
+      });
     }
 
     // Delete files that exist on s3, but not locally
