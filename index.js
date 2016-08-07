@@ -249,28 +249,28 @@ function validateProps (obj, props, idx) {
 
 function getConfig (path, fromCL, cb) {
   fs.readFile(path, function (err, data) {
-    var fromFile;
+    var fromFile
     try {
-       fromFile = JSON.parse(data); // Read data from file
+      fromFile = JSON.parse(data) // Read data from file
     } catch (e) {
-      fromFile = {};
+      fromFile = {}
     }
 
-    var dirty = Object.keys(fromCL).some(function(key){ // Test if anything has changed
-      return fromFile[key] !== fromCL[key];
+    var dirty = Object.keys(fromCL).some(function (key) { // Test if anything has changed
+      return fromFile[key] !== fromCL[key]
     })
 
-    var config = Object.assign(defaultConfig, fromFile, fromCL); // Merge arguments and file parameters
+    var config = Object.assign(defaultConfig, fromFile, fromCL) // Merge arguments and file parameters
 
-    if(!config.domain){
-      console.log("No bucket was specified. Check your config file .s3-website.json")
-      return;
+    if (!config.domain) {
+      console.log('No bucket was specified. Check your config file .s3-website.json')
+      return
     }
 
-    if(dirty && !config.lockConfig){ // Something has changed rewrite file, and we are allowed to write config file
-      fs.writeFile('.s3-website.json', JSON.stringify(config), function(err){
-        if(err) console.error(err);
-        console.log('Updated config file: .s3-website.json');
+    if (dirty && !config.lockConfig) { // Something has changed rewrite file, and we are allowed to write config file
+      fs.writeFile('.s3-website.json', JSON.stringify(config), function (err) {
+        if (err) console.error(err)
+        console.log('Updated config file: .s3-website.json')
         cb(err, config)
       })
     } else { // No change, we're done
@@ -340,11 +340,12 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     function logResults (err, results) {
-      var params = { Bucket: config.domain };
-      s3.getBucketWebsite(params, function(err, website) {
-        if (err) {return cb(err);}
+      if (err) { return cb(err) }
+      var params = { Bucket: config.domain }
+      s3.getBucketWebsite(params, function (err, website) {
+        if (err) { return cb(err) }
         cb(err, parseWebsite(website, null, config), results)
-      });
+      })
     }
 
     // Delete files that exist on s3, but not locally

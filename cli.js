@@ -12,22 +12,22 @@ var getConfig = s3Website.config
 * Filter out commander specific properties from options hash, and merge command
 * line parameters into single hash.
 */
-function getCLArguments(params, options){
-   var fromCL = {};
-   var fromCLKeys = Object.keys(options).filter(function(item){
-     var toRemove = ['commands', 'parent', 'options']
-     if(item.startsWith('_')) return false
-     return toRemove.indexOf(item) < 0
-   });
-   var paramKeys = Object.keys(params);
-   fromCLKeys.forEach(function(key){if(options[key]) fromCL[key] = options[key]});
-   paramKeys.forEach(function(key){if(params[key]) fromCL[key] = params[key]});
-   return fromCL;
+function getCLArguments (params, options) {
+  var fromCL = {}
+  var fromCLKeys = Object.keys(options).filter(function (item) {
+    var toRemove = ['commands', 'parent', 'options']
+    if (item.startsWith('_')) return false
+    return toRemove.indexOf(item) < 0
+  })
+  var paramKeys = Object.keys(params)
+  fromCLKeys.forEach(function (key) { if (options[key]) fromCL[key] = options[key] })
+  paramKeys.forEach(function (key) { if (params[key]) fromCL[key] = params[key] })
+  return fromCL
 }
 
 function printDeployResults (err, website, results) {
   if (err) {
-    console.error(err.message);
+    console.error(err.message)
     process.exit(1)
   }
 
@@ -49,8 +49,11 @@ function printDeployResults (err, website, results) {
     return prev
   }, true)
 
-  if (isEmpty) { console.log('There was nothing to push') }
-  else {if( website.url ) console.log('Updated site: ' + website.url)}
+  if (isEmpty) {
+    console.log('There was nothing to push')
+  } else {
+    if (website.url) console.log('Updated site: ' + website.url)
+  }
 }
 
 program
@@ -78,7 +81,7 @@ program
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .action(function (domain, options) {
-    var args = getCLArguments({domain: domain}, options);
+    var args = getCLArguments({domain: domain}, options)
     getConfig('.s3-website.json', args, function (err, config) { // eslint-disable-line handle-callback-err
       s3site(config, function (err, website, uploadResults) {
         if (err) {
@@ -101,7 +104,7 @@ program
           printDeployResults(null, website, uploadResults)
         }
       })
-    });
+    })
   })
 
 program
@@ -112,12 +115,12 @@ program
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .action(function (uploadDir, options) {
-     var fromCL = getCLArguments({uploadDir: uploadDir}, options);
-     getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
-        var s3 = new AWS.S3({ region: config.region })
-        deploy(s3, config, printDeployResults)
-      })
-    }).on('--help', function () {
+    var fromCL = getCLArguments({uploadDir: uploadDir}, options)
+    getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
+      var s3 = new AWS.S3({ region: config.region })
+      deploy(s3, config, printDeployResults)
+    })
+  }).on('--help', function () {
     console.log(' ')
     console.log('Deploy requires 3 things: ')
     console.log('region: the region where your bucket lives, can be set by commandline flag or in config file')
