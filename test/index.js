@@ -47,6 +47,7 @@ test('create website', function (t) {
 
 test('upload content', function (t) {
   config.uploadDir = './test/fixtures'
+  config.deploy = true
   config.index = 'test-upload.html'
 
   // Check if content from upload directory exists
