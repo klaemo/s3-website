@@ -92,7 +92,7 @@ function s3site (config, cb) {
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
 
-            if (config.uploadDir) {
+            if (config.deploy) {
               return putWebsiteContent(s3, config, function (err, uploadResults) {
                 cb(err, website, uploadResults)
               })
@@ -100,7 +100,7 @@ function s3site (config, cb) {
             cb(null, website, {})
           })
         } else {
-          if (config.uploadDir) {
+          if (config.deploy) {
             return putWebsiteContent(s3, config, function (err, website, uploadResults) {
               cb(err, website, uploadResults)
             })

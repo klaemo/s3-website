@@ -77,7 +77,8 @@ program
   .option('-c, --cert <cert>', 'Path to the public key certificate.')
   .option('-k, --key <key>', 'Path to the private key.')
   .option('-n, --cert-name <certificate name>', 'A unique name for the server certificate.')
-  .option('-u, --upload-dir <upload directory>', 'Upload contents of directory to s3 site.')
+  .option('-u, --upload-dir <upload directory>', 'Set directory to upload when site is deployed.')
+  .option('-d, --deploy', 'Will upload uploadDir immediately after site creation')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .action(function (domain, options) {
