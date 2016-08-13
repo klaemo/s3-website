@@ -319,7 +319,7 @@ function checkDone (allFiles, results, cb) {
   }, []).length
 
   if (fileResults >= totalFiles && cb) {
-    logUpdate('Done Uploading')
+    if(totalFiles > 0) {logUpdate('Done Uploading')}
     cb(null, results)
   }
 }

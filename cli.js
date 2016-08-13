@@ -45,7 +45,7 @@ function printDeployResults (err, website, results) {
     var row = {}
     Object.keys(results).forEach(function(key){
       if(results[key][index]){
-        row[key] = results[key][index].toString().blue;
+        row[key] = results[key][index];
       } else {
         row[key] = ' ';
       }
