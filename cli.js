@@ -8,6 +8,8 @@ var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
 require('console.table')
+require('colors')
+
 
 /**
 * Filter out commander specific properties from options hash, and merge command
@@ -43,7 +45,7 @@ function printDeployResults (err, website, results) {
     var row = {}
     Object.keys(results).forEach(function(key){
       if(results[key][index]){
-        row[key] = results[key][index];
+        row[key] = results[key][index].toString().blue;
       } else {
         row[key] = ' ';
       }
@@ -52,18 +54,18 @@ function printDeployResults (err, website, results) {
   })
 
   if(values.length > 0){
-    console.table('\n\nDeployment Report', values);
+    console.table('\n\nDeployment Report'.yellow, values);
   }
-  
+
   var isEmpty = Object.keys(results).reduce(function (prev, current) {
     if (results[current].length > 0) { return false }
     return prev
   }, true)
 
   if (isEmpty) {
-    console.log('There were no changes to deploy')
+    console.log('There were no changes to deploy'.green)
   } else {
-    if (website.url) console.log('Updated site: ' + website.url)
+    if (website.url) console.log(('Updated site: ' + website.url).green)
   }
 }
 
