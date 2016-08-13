@@ -109,11 +109,11 @@ program
         if (options.json) {
           console.log(JSON.stringify(website))
         } else {
-          console.log('Successfully created your website.\n')
-          console.log('URL:\n  ' + website.url + '\n')
-          console.log('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+          console.log('Successfully created your website.\n'.yellow)
+          console.log(('URL:\n  ' + website.url + '\n').green)
+          console.log(('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n').green)
           if (website.certId) {
-            console.log('Certificate ID:\n  ' + website.certId + '\n')
+            console.log(('Certificate ID:\n  ' + website.certId + '\n').green)
           }
           printDeployResults(null, website, uploadResults)
         }
