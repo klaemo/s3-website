@@ -9,7 +9,7 @@
     "prepublish": "npm prune && npm ls && npm run lint && npm test"
   },
   "bin": {
-    "s3-website": "./cli.js"
+    "s3-website": "./s3-website.js"
   },
   "repository": {
     "type": "git",
