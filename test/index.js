@@ -47,6 +47,7 @@ test('create website', function (t) {
 
 test('upload content', function (t) {
   config.uploadDir = './test/fixtures'
+  config.deploy = true
   config.index = 'test-upload.html'
 
   // Check if content from upload directory exists
@@ -90,6 +91,35 @@ test('create www redirect', function (t) {
   })
 })
 
+test('update only changed files', function (t) {
+  config.uploadDir = './test/fixtures'
+  config.index = 'test-upload.html'
+  s3site(config, function (err, website, results) {
+    if (err) cleanup(config.domain)
+    var shouldUpload = ['another/anotherFile.txt', 'test-upload.html', 'another.txt']
+    t.deepEqual(results.updated, []) // Nothing should be updated
+    t.deepEqual(results.removed, []) // Nothing should be removed
+    t.deepEqual(results.errors, []) // No errors should have occured
+    shouldUpload.forEach(function (file) { // each file in shouldUpload should have been uploaded
+      var result = results.uploaded.findIndex(function (uploaded) {
+        return uploaded === file
+      })
+      t.true(result > -1)
+    })
+
+    s3site(config, function (err, website, results) {
+      if (err) cleanup(config.domain)
+      t.deepEqual(results, {
+        uploaded: [], // No files have changed, so nothing should upload
+        updated: [],
+        removed: [],
+        errors: []
+      })
+      t.end()
+    })
+  })
+})
+
 test('update website', function (t) {
   config.index = 'foo.html'
   config.error = '404.html'
@@ -113,7 +143,12 @@ function cleanup (bucket, cb) {
   s3.deleteObjects({
     Bucket: config.domain,
     Delete: {
-      Objects: [{ Key: 'index.html' }, { Key: 'test-upload.html' }]
+      Objects: [
+        {Key: 'index.html'},
+        {Key: 'test-upload.html'},
+        {Key: 'another.txt'},
+        {Key: 'another/anotherFile.txt'}
+      ]
     }
   }, function (err) { // eslint-disable-line handle-callback-err
     s3.deleteBucket({ Bucket: bucket }, function (err, data) {
