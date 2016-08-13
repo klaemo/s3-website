@@ -31,7 +31,6 @@ function printDeployResults (err, website, results) {
     console.error(err.message)
     process.exit(1)
   }
-debugger;
 
   var numRows = Object.keys(results).reduce(function(prev, current){
     if(results[current].length > prev){prev = results[current].length;}
@@ -41,54 +40,28 @@ debugger;
   var values = new Array(numRows);
   values.fill(0)
   values = values.map(function(_, index){
-    // var row = [];
-    // Object.keys(results).forEach(function(key){
-    //   if(results[key][index]){
-    //     row.push(results[key][index]);
-    //   } else {
-    //     row.push(' ')
-    //   }
-    // })
-    // return row;
-
     var row = {}
     Object.keys(results).forEach(function(key){
       if(results[key][index]){
         row[key] = results[key][index];
       } else {
-        row[key] = ' '
+        row[key] = ' ';
       }
     })
     return row;
   })
 
-  var a = Object.keys(results).concat(values);
-  // console.table('Deployment Report', Object.keys(results).concat(values));
-  console.table('Deployment Report', values);
-debugger;
-
-  // results.errors.forEach(function (file) {
-  //   console.log('Error uploading: ' + file)
-  // })
-  // results.removed.forEach(function (file) {
-  //   console.log('Removed file: ' + file)
-  // })
-  // results.uploaded.forEach(function (file) {
-  //   console.log('Uploaded file: ' + file)
-  // })
-  // results.updated.forEach(function (file) {
-  //   console.log('Updated file: ' + file)
-  // })
-
-
-
+  if(values.length > 0){
+    console.table('\n\nDeployment Report', values);
+  }
+  
   var isEmpty = Object.keys(results).reduce(function (prev, current) {
     if (results[current].length > 0) { return false }
     return prev
   }, true)
 
   if (isEmpty) {
-    console.log('There was nothing to push')
+    console.log('There were no changes to deploy')
   } else {
     if (website.url) console.log('Updated site: ' + website.url)
   }
