@@ -32,6 +32,7 @@
     "aws-sdk": "^2.1.4",
     "cloudfront-tls": "^1.0.0",
     "commander": "^2.6.0",
+    "console.table": "^0.7.0",
     "deep-diff": "^0.3.0",
     "dotenv": "^2.0.0",
     "glob": "7.0.5",

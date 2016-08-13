@@ -7,6 +7,7 @@ var url = require('url')
 var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
+require('console.table')
 
 /**
 * Filter out commander specific properties from options hash, and merge command
@@ -30,19 +31,56 @@ function printDeployResults (err, website, results) {
     console.error(err.message)
     process.exit(1)
   }
+debugger;
 
-  results.errors.forEach(function (file) {
-    console.log('Error uploading: ' + file)
+  var numRows = Object.keys(results).reduce(function(prev, current){
+    if(results[current].length > prev){prev = results[current].length;}
+    return prev;
+  }, 0)
+
+  var values = new Array(numRows);
+  values.fill(0)
+  values = values.map(function(_, index){
+    // var row = [];
+    // Object.keys(results).forEach(function(key){
+    //   if(results[key][index]){
+    //     row.push(results[key][index]);
+    //   } else {
+    //     row.push(' ')
+    //   }
+    // })
+    // return row;
+
+    var row = {}
+    Object.keys(results).forEach(function(key){
+      if(results[key][index]){
+        row[key] = results[key][index];
+      } else {
+        row[key] = ' '
+      }
+    })
+    return row;
   })
-  results.removed.forEach(function (file) {
-    console.log('Removed file: ' + file)
-  })
-  results.uploaded.forEach(function (file) {
-    console.log('Uploaded file: ' + file)
-  })
-  results.updated.forEach(function (file) {
-    console.log('Updated file: ' + file)
-  })
+
+  var a = Object.keys(results).concat(values);
+  // console.table('Deployment Report', Object.keys(results).concat(values));
+  console.table('Deployment Report', values);
+debugger;
+
+  // results.errors.forEach(function (file) {
+  //   console.log('Error uploading: ' + file)
+  // })
+  // results.removed.forEach(function (file) {
+  //   console.log('Removed file: ' + file)
+  // })
+  // results.uploaded.forEach(function (file) {
+  //   console.log('Uploaded file: ' + file)
+  // })
+  // results.updated.forEach(function (file) {
+  //   console.log('Updated file: ' + file)
+  // })
+
+
 
   var isEmpty = Object.keys(results).reduce(function (prev, current) {
     if (results[current].length > 0) { return false }
