@@ -128,7 +128,7 @@ program
           console.log('  DNS:')
           console.log('    ' + config.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
           if (website.certId) {
-            console.log(('  Certificate ID:\n  ' + website.certId + '\n').green)
+            console.log('  Certificate ID:\n  ' + website.certId + '\n')
           }
           printDeployResults(null, website, uploadResults)
         }
