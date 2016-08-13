@@ -7,6 +7,8 @@ var url = require('url')
 var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
+require('console.table')
+require('colors')
 
 /**
 * Filter out commander specific properties from options hash, and merge command
@@ -31,18 +33,28 @@ function printDeployResults (err, website, results) {
     process.exit(1)
   }
 
-  results.errors.forEach(function (file) {
-    console.log('Error uploading: ' + file)
+  var numRows = Object.keys(results).reduce(function (prev, current) {
+    if (results[current].length > prev) { prev = results[current].length }
+    return prev
+  }, 0)
+
+  var values = new Array(numRows)
+  values.fill(0)
+  values = values.map(function (_, index) {
+    var row = {}
+    Object.keys(results).forEach(function (key) {
+      if (results[key][index]) {
+        row[key] = results[key][index]
+      } else {
+        row[key] = ' '
+      }
+    })
+    return row
   })
-  results.removed.forEach(function (file) {
-    console.log('Removed file: ' + file)
-  })
-  results.uploaded.forEach(function (file) {
-    console.log('Uploaded file: ' + file)
-  })
-  results.updated.forEach(function (file) {
-    console.log('Updated file: ' + file)
-  })
+
+  if (values.length > 0) {
+    console.table('\n\nDeployment Report'.yellow, values)
+  }
 
   var isEmpty = Object.keys(results).reduce(function (prev, current) {
     if (results[current].length > 0) { return false }
@@ -50,18 +62,32 @@ function printDeployResults (err, website, results) {
   }, true)
 
   if (isEmpty) {
-    console.log('There was nothing to push')
+    console.log('There were no changes to deploy'.green)
   } else {
-    if (website.url) console.log('Updated site: ' + website.url)
+    if (website.url) console.log(('Updated site: ' + website.url).green)
   }
 }
 
 program
-  .usage(':Use one of commands below to create an s3-website or deploy content to an existing bucket.\n' +
-    '\n  Credentials: Aws Credentials should either be supplied in a local .env file or in ~/.aws/credentials\n' +
-    '    Credentials should follow this format: \n    AWS_ACCESS_KEY_ID=MY_KEY_ID\n    AWS_SECRET_ACCESS_KEY=MY_SECRET_KEY\n\n' +
-    'To see more information about any command: \n    s3-website command -h'
-  )
+  .usage('<command> [option]')
+  .description(
+    'Use one of commands below to create an s3-website or deploy content to an existing bucket.'
+  ).on('--help', function(){
+    console.log('  Credentials:');
+    console.log('')
+    console.log('    Aws Credentials should either be supplied in a local .env file or in ~/.aws/credentials')
+    console.log('      Credentials should follow this format:');
+    console.log('        AWS_ACCESS_KEY_ID=MY_KEY_ID');
+    console.log('        AWS_SECRET_ACCESS_KEY=MY_SECRET_KEY');
+    console.log(' ')
+    console.log('  Config file: ')
+    console.log('')
+    console.log('    Should be titled .s3-website.json')
+    console.log('    should contain only a JSON object containing at least the keys: region, domain, uploadDir')
+    console.log('')
+    console.log('  To see more information about a specific command:');
+    console.log('    s3-website <command> -h'.green)
+  })
   .version(require('./package.json').version)
 
 program
@@ -96,11 +122,11 @@ program
         if (options.json) {
           console.log(JSON.stringify(website))
         } else {
-          console.log('Successfully created your website.\n')
-          console.log('URL:\n  ' + website.url + '\n')
-          console.log('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
+          console.log('Successfully created your website.\n'.yellow)
+          console.log(('URL:\n  ' + website.url + '\n').green)
+          console.log(('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n').green)
           if (website.certId) {
-            console.log('Certificate ID:\n  ' + website.certId + '\n')
+            console.log(('Certificate ID:\n  ' + website.certId + '\n').green)
           }
           printDeployResults(null, website, uploadResults)
         }
@@ -123,17 +149,17 @@ program
     })
   }).on('--help', function () {
     console.log(' ')
-    console.log('Deploy requires 3 things: ')
-    console.log('region: the region where your bucket lives, can be set by commandline flag or in config file')
-    console.log('domain: the name of your bucket, can be set by commandline flag or in config file')
-    console.log('uploadDir: the name of the directory whose contents you want to upload,' +
+    console.log('  Successful deployment requires: '.yellow)
+    console.log('')
+    console.log('    Correct config: - passed from commandline or from config file .s3-website.json')
+    console.log('      region: the region where your bucket lives, can be set by commandline flag or in config file')
+    console.log('      domain: the name of your bucket, can be set by commandline flag or in config file')
+    console.log('      uploadDir: the name of the directory whose contents you want to upload,' +
       'can be supplied as first argument to deploy or in config file')
+    console.log('')
+    console.log('    Valid AWS credentials: - run s3-website -h for more info');
     console.log(' ')
-    console.log('These can be supplied as command line arguments, or in a json config file')
-    console.log(' ')
-    console.log('Config file: ')
-    console.log('Should be titled .s3-website.json')
-    console.log('should contain only a JSON object with keys: region, domain, uploadDir')
+    console.log('  These can be supplied as command line arguments, or in a json config file .s3-website.json'.green)
   })
 
 program

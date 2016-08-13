@@ -11,6 +11,7 @@ var fs = require('fs')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
+var logUpdate = require('log-update')
 
 var defaultConfig = {
   index: 'index.html',
@@ -71,7 +72,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region, signatureVersion: 'v4' })
+  var s3 = new AWS.S3({ region: config.region })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
@@ -284,6 +285,7 @@ function deleteFile (s3, config, file, cb) {
     Bucket: config.domain,
     Key: file
   }
+  logUpdate('Removing: ' + file)
   s3.deleteObject(params, function (err, data) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
@@ -297,6 +299,8 @@ function uploadFile (s3, config, file, cb) {
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: mime.lookup(file)
   }
+
+  logUpdate('Uploading: ' + file)
   s3.putObject(params, function (err, data) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
@@ -314,6 +318,7 @@ function checkDone (allFiles, results, cb) {
   }, []).length
 
   if (fileResults >= totalFiles && cb) {
+    if (totalFiles > 0) { logUpdate('Done Uploading') }
     cb(null, results)
   }
 }
@@ -323,7 +328,7 @@ function putWebsiteContent (s3, config, cb) {
 
   s3diff({
     aws: {
-      signatureVersion: 'v4'
+      // signatureVersion: 'v4' TODO is necessary?
     },
     local: config.uploadDir || '.',
     remote: {
