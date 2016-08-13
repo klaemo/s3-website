@@ -13,7 +13,6 @@ require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
 var logUpdate = require('log-update')
 
-
 var defaultConfig = {
   index: 'index.html',
   region: 'us-east-1',
@@ -286,7 +285,7 @@ function deleteFile (s3, config, file, cb) {
     Bucket: config.domain,
     Key: file
   }
-  logUpdate('Removing: ' + file);
+  logUpdate('Removing: ' + file)
   s3.deleteObject(params, function (err, data) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
@@ -301,7 +300,7 @@ function uploadFile (s3, config, file, cb) {
     ContentType: mime.lookup(file)
   }
 
-  logUpdate('Uploading: ' + file);
+  logUpdate('Uploading: ' + file)
   s3.putObject(params, function (err, data) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
@@ -319,7 +318,7 @@ function checkDone (allFiles, results, cb) {
   }, []).length
 
   if (fileResults >= totalFiles && cb) {
-    if(totalFiles > 0) {logUpdate('Done Uploading')}
+    if (totalFiles > 0) { logUpdate('Done Uploading') }
     cb(null, results)
   }
 }

@@ -10,7 +10,6 @@ var getConfig = s3Website.config
 require('console.table')
 require('colors')
 
-
 /**
 * Filter out commander specific properties from options hash, and merge command
 * line parameters into single hash.
@@ -34,27 +33,27 @@ function printDeployResults (err, website, results) {
     process.exit(1)
   }
 
-  var numRows = Object.keys(results).reduce(function(prev, current){
-    if(results[current].length > prev){prev = results[current].length;}
-    return prev;
+  var numRows = Object.keys(results).reduce(function (prev, current) {
+    if (results[current].length > prev) { prev = results[current].length }
+    return prev
   }, 0)
 
-  var values = new Array(numRows);
+  var values = new Array(numRows)
   values.fill(0)
-  values = values.map(function(_, index){
+  values = values.map(function (_, index) {
     var row = {}
-    Object.keys(results).forEach(function(key){
-      if(results[key][index]){
-        row[key] = results[key][index];
+    Object.keys(results).forEach(function (key) {
+      if (results[key][index]) {
+        row[key] = results[key][index]
       } else {
-        row[key] = ' ';
+        row[key] = ' '
       }
     })
-    return row;
+    return row
   })
 
-  if(values.length > 0){
-    console.table('\n\nDeployment Report'.yellow, values);
+  if (values.length > 0) {
+    console.table('\n\nDeployment Report'.yellow, values)
   }
 
   var isEmpty = Object.keys(results).reduce(function (prev, current) {
