@@ -72,7 +72,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region, signatureVersion: 'v4' })
+  var s3 = new AWS.S3({ region: config.region })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
@@ -328,7 +328,7 @@ function putWebsiteContent (s3, config, cb) {
 
   s3diff({
     aws: {
-      signatureVersion: 'v4'
+      // signatureVersion: 'v4' TODO is necessary?
     },
     local: config.uploadDir || '.',
     remote: {

@@ -69,9 +69,8 @@ function printDeployResults (err, website, results) {
 }
 
 program
-  .usage(
-    '<command> [option]'
-  ).description(
+  .usage('<command> [option]')
+  .description(
     'Use one of commands below to create an s3-website or deploy content to an existing bucket.'
   ).on('--help', function(){
     console.log('  Credentials:');
