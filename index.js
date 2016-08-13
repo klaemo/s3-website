@@ -328,7 +328,7 @@ function putWebsiteContent (s3, config, cb) {
 
   s3diff({
     aws: {
-      // signatureVersion: 'v4' TODO is necessary?
+      signatureVersion: 'v4'
     },
     local: config.uploadDir || '.',
     remote: {
