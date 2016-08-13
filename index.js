@@ -11,6 +11,8 @@ var fs = require('fs')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
+var logUpdate = require('log-update')
+
 
 var defaultConfig = {
   index: 'index.html',
@@ -284,6 +286,7 @@ function deleteFile (s3, config, file, cb) {
     Bucket: config.domain,
     Key: file
   }
+  logUpdate('Removing: ' + file);
   s3.deleteObject(params, function (err, data) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
@@ -297,6 +300,8 @@ function uploadFile (s3, config, file, cb) {
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: mime.lookup(file)
   }
+
+  logUpdate('Uploading: ' + file);
   s3.putObject(params, function (err, data) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
@@ -314,6 +319,7 @@ function checkDone (allFiles, results, cb) {
   }, []).length
 
   if (fileResults >= totalFiles && cb) {
+    logUpdate('Done Uploading')
     cb(null, results)
   }
 }
