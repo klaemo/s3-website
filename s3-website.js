@@ -62,7 +62,7 @@ function printDeployResults (err, website, results) {
   }, true)
 
   if (isEmpty) {
-    console.log('There were no changes to deploy'.green)
+    console.log('There were no changes to deploy'.yellow)
   } else {
     if (website.url) console.log(('Updated site: ' + website.url).green)
   }
@@ -122,11 +122,13 @@ program
         if (options.json) {
           console.log(JSON.stringify(website))
         } else {
-          console.log('Successfully created your website.\n'.yellow)
-          console.log(('URL:\n  ' + website.url + '\n').green)
-          console.log(('DNS:\n  ' + options.domain + '. CNAME ' + url.parse(website.url).host + '.\n').green)
+          console.log('Successfully created your website.\n'.green)
+          console.log('  URL:')
+          console.log('    '+website.url)
+          console.log('  DNS:')
+          console.log('    '+config.domain + '. CNAME ' + url.parse(website.url).host + '.\n')
           if (website.certId) {
-            console.log(('Certificate ID:\n  ' + website.certId + '\n').green)
+            console.log(('  Certificate ID:\n  ' + website.certId + '\n').green)
           }
           printDeployResults(null, website, uploadResults)
         }
