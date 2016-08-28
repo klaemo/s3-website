@@ -334,7 +334,8 @@ function putWebsiteContent (s3, config, cb) {
     remote: {
       bucket: config.domain,
       prefix: ''
-    }
+    },
+    recursive: true
   }, function (err, data) {
     if (err) return cb(err)
     var results = {
