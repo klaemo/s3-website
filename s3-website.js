@@ -7,6 +7,7 @@ var url = require('url')
 var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
+var templateConfig = s3Website.templateConfig
 require('console.table')
 require('colors')
 
@@ -171,7 +172,7 @@ program
   .usage('')
   .description('Creates an configuration file template')
   .action(function(){
-    getConfig('.s3-website.json', {domain:'template.bucket.name'}, function (err, config) { // eslint-disable-line handle-callback-er
+    getConfig('.s3-website.json', templateConfig, function (err, config) { // eslint-disable-line handle-callback-er
       if(err){ console.err(err)}
     })
   })

@@ -17,8 +17,35 @@ var defaultConfig = {
   index: 'index.html',
   region: 'us-east-1',
   uploadDir: '.',
-  prefix: ''
+  prefix: '',
+  corsConfiguration: {}
 }
+
+var templateConfig = Object.assign({},
+  defaultConfig,
+  {
+    domain:'sample.bucket.name',
+    corsConfiguration: {
+      AllowedMethods: [ /* required */
+        'STRING_VALUE',
+        /* more items */
+      ],
+      AllowedOrigins: [ /* required */
+        'STRING_VALUE',
+        /* more items */
+      ],
+      AllowedHeaders: [
+        'STRING_VALUE',
+        /* more items */
+      ],
+      ExposeHeaders: [
+        'STRING_VALUE',
+        /* more items */
+      ],
+      MaxAgeSeconds: 0
+    }
+  }
+)
 
 var defaultBucketConfig = {
   Bucket: '' /* required */
@@ -82,6 +109,12 @@ function s3site (config, cb) {
       if (err) return cb(err)
       createWebsite(s3, websiteConfig, config, function (err, website) {
         if (err) return cb(err)
+
+        // if(config.corsConfiguration){
+        //   setCorsRules(s3,config.domain, config.corsConfiguration, function(err, data){
+        //     debugger;
+        //   })
+        // }
 
         if (config.cert || config.certId) {
           config.aliases = config.aliases || [ config.domain ]
@@ -157,6 +190,18 @@ function createWebsite (s3, websiteConfig, config, cb) {
     }
   })
 }
+
+// function setCorsRules(s3, bucket, rules, cb){
+//   var s3Params = {
+//     Bucket: bucket,
+//     CORSConfiguration: {
+//       CORSRules: rules
+//     }
+//   }
+//   s3.putBucketCors(s3Params, function(err, data){
+//     if(cb){cb(err, data)}
+//   })
+// }
 
 // sets up a public-read bucket policy
 function setPolicy (s3, bucket, cb) {
@@ -392,5 +437,6 @@ function putWebsiteContent (s3, config, cb) {
 module.exports = {
   s3site: s3site,
   deploy: putWebsiteContent,
-  config: getConfig
+  config: getConfig,
+  templateConfig: templateConfig
 }
