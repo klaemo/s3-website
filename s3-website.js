@@ -167,6 +167,16 @@ program
   })
 
 program
+  .command('config')
+  .usage('')
+  .description('Creates an configuration file template')
+  .action(function(){
+    getConfig('.s3-website.json', {domain:'template.bucket.name'}, function (err, config) { // eslint-disable-line handle-callback-er
+      if(err){ console.err(err)}
+    })
+  })
+
+program
   .command('*')
   .description('Output usage message')
   .action(function (env) {
