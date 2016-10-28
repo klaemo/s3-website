@@ -105,6 +105,7 @@ program
   .option('-n, --cert-name <certificate name>', 'A unique name for the server certificate.')
   .option('-u, --upload-dir <upload directory>', 'Set directory to upload when site is deployed.')
   .option('-d, --deploy', 'Will upload uploadDir immediately after site creation')
+  .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .action(function (domain, options) {
@@ -141,8 +142,9 @@ program
   .usage('[dir] [options]')
   .description('Will push contents of directory to specified s3 website')
   .option('-r, --region <region>', 'Region [us-east-1].')
-  .option('-d, --domain <domain>', 'Name of bucket [example.bucket]')
+  .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
+  .option('-d, --domain <domain>', 'Name of bucket [example.bucket] - put always this parameter last one')
   .action(function (uploadDir, options) {
     var fromCL = getCLArguments({uploadDir: uploadDir}, options)
     getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
