@@ -45,6 +45,44 @@ test('create website', function (t) {
   })
 })
 
+// Bucket: 'STRING_VALUE', /* required */
+  // CORSConfiguration: { /* required */
+    // CORSRules:
+  // },
+  // ContentMD5: 'STRING_VALUE'
+
+test.only('configure bucket CORS', function (t) {
+  var s3 = new AWS.S3({ region: config.region })
+  var corsConfig = Object.assign({}, config)
+  var corsRules = [
+      {
+        AllowedMethods: [
+          'TEST_METHOD',
+        ],
+        AllowedOrigins: [
+          'TEST_ORIGIN',
+        ],
+        AllowedHeaders: [
+          'TEST_HEADER',
+        ],
+        ExposeHeaders: [
+          'TEST_HEADER',
+        ],
+        MaxAgeSeconds: 15
+      }
+    ]
+  s3site(corsConfig, function(err, website){
+    var s3 = new AWS.S3({ region: config.region })
+    s3.getBucketCors({Bucket:""}, function(err, data) {
+        t.deepLooseEqual(data.CORSRules, corsRules)
+        cleanup(corsConfig.domain, function () {
+        t.pass('deleted ' + corsConfig.domain)
+        t.end()
+      })
+    })
+  })
+})
+
 test('upload content', function (t) {
   config.uploadDir = './test/fixtures'
   config.deploy = true
