@@ -16,7 +16,8 @@ var logUpdate = require('log-update')
 var defaultConfig = {
   index: 'index.html',
   region: 'us-east-1',
-  uploadDir: '.'
+  uploadDir: '.',
+  prefix: ''
 }
 
 var defaultBucketConfig = {
@@ -280,10 +281,14 @@ function getConfig (path, fromCL, cb) {
   })
 }
 
+function normalizeKey (prefix, key) {
+  return prefix ? prefix + '/' + key : key
+}
+
 function deleteFile (s3, config, file, cb) {
   var params = {
     Bucket: config.domain,
-    Key: file
+    Key: normalizeKey(config.prefix, file)
   }
   logUpdate('Removing: ' + file)
   s3.deleteObject(params, function (err, data) {
@@ -295,7 +300,7 @@ function deleteFile (s3, config, file, cb) {
 function uploadFile (s3, config, file, cb) {
   var params = {
     Bucket: config.domain,
-    Key: file,
+    Key: normalizeKey(config.prefix, file),
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: mime.lookup(file)
   }
@@ -333,7 +338,7 @@ function putWebsiteContent (s3, config, cb) {
     local: config.uploadDir || '.',
     remote: {
       bucket: config.domain,
-      prefix: ''
+      prefix: config.prefix
     },
     recursive: true
   }, function (err, data) {

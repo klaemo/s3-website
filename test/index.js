@@ -78,7 +78,7 @@ test('create www redirect', function (t) {
     // check if redirect works
     supertest(website.url).get('/')
       .expect(301)
-      .expect('content-length', 0)
+      .expect('content-length', '0')
       .expect('location', destination)
       .end(function (err, res) {
         if (err) cleanup(subdomain)
@@ -120,6 +120,24 @@ test('update only changed files', function (t) {
   })
 })
 
+test('upload content with prefix', function (t) {
+  config.uploadDir = './test/fixtures'
+  config.deploy = true
+  config.index = 'test-upload.html'
+  config.prefix = 'prefix/folder'
+
+  // Check if content from upload directory exists
+  s3site(config, function (err, website) {
+    if (err) cleanup(config.domain)
+    t.error(err, 'website uploaded')
+    supertest(website.url).get('/prefix/folder/test-upload.html')
+      .expect(200)
+      .expect('content-type', /html/)
+      .expect(/Howdy/)
+      .end(t.end)
+  })
+})
+
 test('update website', function (t) {
   config.index = 'foo.html'
   config.error = '404.html'
@@ -147,7 +165,11 @@ function cleanup (bucket, cb) {
         {Key: 'index.html'},
         {Key: 'test-upload.html'},
         {Key: 'another.txt'},
-        {Key: 'another/anotherFile.txt'}
+        {Key: 'another/anotherFile.txt'},
+        {Key: 'prefix/folder/index.html'},
+        {Key: 'prefix/folder/test-upload.html'},
+        {Key: 'prefix/folder/another.txt'},
+        {Key: 'prefix/folder/another/anotherFile.txt'}
       ]
     }
   }, function (err) { // eslint-disable-line handle-callback-err

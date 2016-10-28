@@ -52,6 +52,8 @@ To see options for each command  `s3-website command -h`
   * Bucket can be specified by providing command line argument -d, or --domain
     followed by the name of the s3 bucket. If no option is provided s3-website
     will look for config file written when bucket is created.
+  ** Because there is an issue in the command line library, you must to put the "-d" option last.
+    The next dependency version should fix this issue
 
 
 All the options are optional ;-).
