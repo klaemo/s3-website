@@ -170,7 +170,7 @@ program
 program
   .command('configTemplate')
   .usage('')
-  .description('Creates a configuration file template')
+  .description('Creates a configuration file template, which can be used to create site by setting config details and running s3-website create')
   .action(function () {
     getConfig('.s3-website.json', templateConfig, function (err, config) { // eslint-disable-line handle-callback-er
       if (err) { console.err(err) }
