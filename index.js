@@ -315,7 +315,7 @@ function getConfig (path, fromCL, cb) {
     }
 
     if (dirty && !config.lockConfig) { // Something has changed rewrite file, and we are allowed to write config file
-      fs.writeFile('.s3-website.json', JSON.stringify(config), function (err) {
+      fs.writeFile('.s3-website.json', JSON.stringify(config, null, 3), function (err) {
         if (err) console.error(err)
         console.log('Updated config file: .s3-website.json')
         cb(err, config)
