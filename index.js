@@ -24,22 +24,22 @@ var defaultConfig = {
 var templateConfig = Object.assign({},
   defaultConfig,
   {
-    domain:'sample.bucket.name',
+    domain: 'sample.bucket.name',
     corsConfiguration: [{
       AllowedMethods: [ /* required */
-        'STRING_VALUE_REQUIRED',
+        'STRING_VALUE_REQUIRED'
         /* more items */
       ],
       AllowedOrigins: [ /* required */
-        'STRING_VALUE_REQUIRED',
+        'STRING_VALUE_REQUIRED'
         /* more items */
       ],
       AllowedHeaders: [
-        'STRING_VALUE',
+        'STRING_VALUE'
         /* more items */
       ],
       ExposeHeaders: [
-        'STRING_VALUE',
+        'STRING_VALUE'
         /* more items */
       ],
       MaxAgeSeconds: 0
@@ -110,9 +110,9 @@ function s3site (config, cb) {
       createWebsite(s3, websiteConfig, config, function (err, website) {
         if (err) return cb(err)
 
-        if(config.corsConfiguration.length > 0){
-          setCorsRules(s3,config.domain, config.corsConfiguration, function(err, data){
-            if(err) console.error(err)
+        if (config.corsConfiguration.length > 0) {
+          setCorsRules(s3, config.domain, config.corsConfiguration, function (err, data) {
+            if (err) console.error(err)
           })
         }
 
@@ -191,15 +191,15 @@ function createWebsite (s3, websiteConfig, config, cb) {
   })
 }
 
-function setCorsRules(s3, bucket, rules, cb){
+function setCorsRules (s3, bucket, rules, cb) {
   var s3Params = {
     Bucket: bucket,
     CORSConfiguration: {
       CORSRules: rules
     }
   }
-  s3.putBucketCors(s3Params, function(err, data){
-    if(cb){cb(err, data)}
+  s3.putBucketCors(s3Params, function (err, data) {
+    if (cb) { cb(err, data) }
   })
 }
 
