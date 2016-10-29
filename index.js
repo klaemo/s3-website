@@ -110,7 +110,7 @@ function s3site (config, cb) {
       createWebsite(s3, websiteConfig, config, function (err, website) {
         if (err) return cb(err)
 
-        if(config.corsConfiguration){
+        if(config.corsConfiguration.length > 0){
           setCorsRules(s3,config.domain, config.corsConfiguration, function(err, data){
             if(err) console.error(err)
           })
