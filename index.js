@@ -18,20 +18,20 @@ var defaultConfig = {
   region: 'us-east-1',
   uploadDir: '.',
   prefix: '',
-  corsConfiguration: {}
+  corsConfiguration: []
 }
 
 var templateConfig = Object.assign({},
   defaultConfig,
   {
     domain:'sample.bucket.name',
-    corsConfiguration: {
+    corsConfiguration: [{
       AllowedMethods: [ /* required */
-        'STRING_VALUE',
+        'STRING_VALUE_REQUIRED',
         /* more items */
       ],
       AllowedOrigins: [ /* required */
-        'STRING_VALUE',
+        'STRING_VALUE_REQUIRED',
         /* more items */
       ],
       AllowedHeaders: [
@@ -43,7 +43,7 @@ var templateConfig = Object.assign({},
         /* more items */
       ],
       MaxAgeSeconds: 0
-    }
+    }]
   }
 )
 
@@ -110,11 +110,11 @@ function s3site (config, cb) {
       createWebsite(s3, websiteConfig, config, function (err, website) {
         if (err) return cb(err)
 
-        // if(config.corsConfiguration){
-        //   setCorsRules(s3,config.domain, config.corsConfiguration, function(err, data){
-        //     debugger;
-        //   })
-        // }
+        if(config.corsConfiguration){
+          setCorsRules(s3,config.domain, config.corsConfiguration, function(err, data){
+            if(err) console.error(err)
+          })
+        }
 
         if (config.cert || config.certId) {
           config.aliases = config.aliases || [ config.domain ]
@@ -191,17 +191,17 @@ function createWebsite (s3, websiteConfig, config, cb) {
   })
 }
 
-// function setCorsRules(s3, bucket, rules, cb){
-//   var s3Params = {
-//     Bucket: bucket,
-//     CORSConfiguration: {
-//       CORSRules: rules
-//     }
-//   }
-//   s3.putBucketCors(s3Params, function(err, data){
-//     if(cb){cb(err, data)}
-//   })
-// }
+function setCorsRules(s3, bucket, rules, cb){
+  var s3Params = {
+    Bucket: bucket,
+    CORSConfiguration: {
+      CORSRules: rules
+    }
+  }
+  s3.putBucketCors(s3Params, function(err, data){
+    if(cb){cb(err, data)}
+  })
+}
 
 // sets up a public-read bucket policy
 function setPolicy (s3, bucket, cb) {

@@ -168,9 +168,9 @@ program
   })
 
 program
-  .command('config')
+  .command('configTemplate')
   .usage('')
-  .description('Creates an configuration file template')
+  .description('Creates a configuration file template')
   .action(function(){
     getConfig('.s3-website.json', templateConfig, function (err, config) { // eslint-disable-line handle-callback-er
       if(err){ console.err(err)}
