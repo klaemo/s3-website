@@ -7,6 +7,7 @@ var url = require('url')
 var s3site = s3Website.s3site
 var deploy = s3Website.deploy
 var getConfig = s3Website.config
+var templateConfig = s3Website.templateConfig
 require('console.table')
 require('colors')
 
@@ -164,6 +165,16 @@ program
     console.log('    Valid AWS credentials: - run s3-website -h for more info')
     console.log(' ')
     console.log('  These can be supplied as command line arguments, or in a json config file .s3-website.json'.green)
+  })
+
+program
+  .command('configTemplate')
+  .usage('')
+  .description('Creates a configuration file template, which can be used to create site by setting config details and running s3-website create')
+  .action(function () {
+    getConfig('.s3-website.json', templateConfig, function (err, config) { // eslint-disable-line handle-callback-er
+      if (err) { console.err(err) }
+    })
   })
 
 program
