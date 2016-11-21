@@ -18,7 +18,8 @@ var defaultConfig = {
   region: 'us-east-1',
   uploadDir: '.',
   prefix: '',
-  corsConfiguration: []
+  corsConfiguration: [],
+  enableCloudfront: false
 }
 
 var templateConfig = Object.assign({},
@@ -116,13 +117,11 @@ function s3site (config, cb) {
           })
         }
 
-        if (config.cert || config.certId) {
+        if (config.enableCloudfront || config.cert || config.certId) {
           config.aliases = config.aliases || [ config.domain ]
           config.origin = url.parse(website.url).host
-
           cloudfront(config, function (err, distribution) {
             if (err) return cb(err)
-
             website.url = 'http://' + distribution.url
             website.certId = distribution.certId
             website.cloudfront = distribution.distribution
