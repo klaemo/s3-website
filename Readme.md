@@ -66,7 +66,7 @@ For the TLS related options take a look at the [cloudfront-tls](https://github.c
 ### Usage (API)
 
 ```javascript
-var s3site = require('s3-website')
+var s3site = require('s3-website').s3site
 
 s3site({
   domain: 'test.site.me', // required, will be the bucket name
