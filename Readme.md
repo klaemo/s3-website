@@ -89,6 +89,22 @@ s3site({
 
 You can also pass in the same the TLS related options as in [cloudfront-tls](https://github.com/klaemo/cloudfront-tls). So you might want to take a look at its readme if you want to use your own certificates.
 
+If you want to deploy using the API, create an `s3` instance:
+
+```javascript
+const deploy = require('s3-website').deploy;
+const config = require('./config');
+const AWS = require('aws-sdk');
+const s3 = new AWS.S3({ region: config.region })
+
+deploy(s3, config, (err, website) => {
+  if(err) {
+    throw err
+  }
+  console.log(website)
+})
+```
+
 ### Routing Rules
 
 `RoutingRules` can be provided via cli and API. From the cli you will need to provide the path to
