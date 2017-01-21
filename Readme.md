@@ -66,7 +66,7 @@ For the TLS related options take a look at the [cloudfront-tls](https://github.c
 ### Usage (API)
 
 ```javascript
-var s3site = require('s3-website').s3site
+const s3site = require('s3-website').s3site
 
 s3site({
   domain: 'test.site.me', // required, will be the bucket name
@@ -81,9 +81,11 @@ s3site({
         HostName: 'foo.com'
     }
   }]
-}, function(err, website) {
-  if (err) throw err
-  console.log(website)
+}, (err, website) => {
+  if(err) {
+    throw err;
+  }
+  console.log(website);
 })
 ```
 
@@ -99,9 +101,9 @@ const s3 = new AWS.S3({ region: config.region })
 
 deploy(s3, config, (err, website) => {
   if(err) {
-    throw err
+    throw err;
   }
-  console.log(website)
+  console.log(website);
 })
 ```
 
