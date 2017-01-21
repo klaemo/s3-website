@@ -66,9 +66,9 @@ For the TLS related options take a look at the [cloudfront-tls](https://github.c
 ### Usage (API)
 
 ```javascript
-const s3site = require('s3-website').s3site
+const create = require('s3-website').s3site;
 
-s3site({
+create({
   domain: 'test.site.me', // required, will be the bucket name
   region: 'eu-central-1', // optional, default: us-east-1
   index: 'index.html', // optional index document, default: index.html
@@ -94,10 +94,10 @@ You can also pass in the same the TLS related options as in [cloudfront-tls](htt
 If you want to deploy using the API, create an `s3` instance:
 
 ```javascript
-const deploy = require('s3-website').deploy;
-const config = require('./config');
-const AWS = require('aws-sdk');
-const s3 = new AWS.S3({ region: config.region })
+const deploy = require('s3-website').deploy
+    , config = require('./config')
+    , AWS = require('aws-sdk')
+    , s3 = new AWS.S3({ region: config.region });
 
 deploy(s3, config, (err, website) => {
   if(err) {
@@ -118,15 +118,17 @@ array of rules to the API with the `routes` option.
 To redirect all requests to another domain eg: www -> non www
 You can use the rederectall option. NOTE: index, error, and routing rules are not needed when redirecting all requests to another domain.
 ```javascript
-var s3site = require('s3-website')
+const create = require('s3-website').s3site;
 
-s3site({
+create({
   domain: 'www.site.me', // required, will be the bucket name
   region: 'eu-central-1', // optional, default: us-east-1
   redirectall: 'site.me'
-}, function(err, website) {
-  if (err) throw err
-  console.log(website)
+}, (err, website) => {
+  if(err) {
+    throw err;
+  }
+  console.log(website);
 })
 ```
 
