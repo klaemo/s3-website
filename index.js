@@ -7,11 +7,12 @@ var url = require('url')
 var cloudfront = require('cloudfront-tls')
 var diff = require('deep-diff').diff
 var assign = require('object-assign')
-var fs = require('fs')
+var fs = require('graceful-fs')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
 var logUpdate = require('log-update')
+var array = require('lodash/array');
 
 var defaultConfig = {
   index: 'index.html',
@@ -341,6 +342,15 @@ function deleteFile (s3, config, file, cb) {
   })
 }
 
+function uploadFiles(s3, config, files, cb, index = 0){
+  uploadFile(s3,config, files[index], function(err, data, file){
+     console.log("Finished: ", index, " of ", files.length);
+
+    if(index ==  files.length - 1) return cb(err, data, file);
+    uploadFiles(s3, config, files, cb, index + 1);
+  });
+}
+
 function uploadFile (s3, config, file, cb) {
   var params = {
     Bucket: config.domain,
@@ -366,11 +376,34 @@ function checkDone (allFiles, results, cb) {
     return prev.concat(current)
   }, []).length
 
+  //console.log("Finished: ", fileResults, " of ", totalFiles);
   if (fileResults >= totalFiles && cb) {
     if (totalFiles > 0) { logUpdate('Done Uploading') }
     cb(null, results)
   }
 }
+
+//function chunkedUpload(arr){
+//  var result = {
+//    uploaded: [],
+//    errors: []
+//  };
+//
+//  array.chunk(arr, 1500).forEach(function(chunk){
+//    new Promise(function(resolve){
+//      uploadFiles(s3,config, chunk, function(err, data, file){
+//        if(err){
+//          errors.push(file)
+//        } else { uploaded.push(file) }
+//
+//        if(uploaded.length + errors.length == arr.length){ cb(err, data, file)}
+//        resolve()
+//      })
+//    })
+//  })
+//
+//  return result;
+//}
 
 function putWebsiteContent (s3, config, cb) {
   if (typeof cb !== 'function') { cb = function () {} }
@@ -395,6 +428,7 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     function logResults (err, results) {
+      debugger;
       if (err) { return cb(err) }
       var params = { Bucket: config.domain }
       s3.getBucketWebsite(params, function (err, website) {
@@ -404,32 +438,57 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     // Delete files that exist on s3, but not locally
-    data.missing.forEach(function (file) {
-      deleteFile(s3, config, file, function (err, fileData, file) {
-        if (err) { return results.errors.push(err) }
-        results.removed.push(file)
-        checkDone(data, results, logResults)
-      })
-    })
+//    data.missing.forEach(function (file) {
+//      deleteFile(s3, config, file, function (err, fileData, file) {
+//        if (err) { return results.errors.push(err) }
+//        results.removed.push(file)
+//        checkDone(data, results, logResults)
+//      })
+//    })
 
     // Upload changed files
-    data.changed.forEach(function (file) {
-      uploadFile(s3, config, file, function (err, fileData, file) {
-        if (err) { return results.errors.push(err) }
-        results.updated.push(file)
-        checkDone(data, results, logResults)
-      })
-    })
+//    data.changed.forEach(function (file) {
+//      uploadFile(s3, config, file, function (err, fileData, file) {
+//        if (err) { return results.errors.push(err) }
+//        results.updated.push(file)
+//        checkDone(data, results, logResults)
+//      })
+//    })
 
     // Upload files that exist locally but not on s3
-    data.extra.forEach(function (file) {
-      uploadFile(s3, config, file, function (err, fileData, file) {
-        if (err) { return results.errors.push(err) }
-        results.uploaded.push(file)
-        checkDone(data, results, logResults)
+//    data.extra.forEach(function (file) {
+//      uploadFile(s3, config, file, function (err, fileData, file) {
+//        if (err) { return results.errors.push(err) }
+//        results.uploaded.push(file)
+//        checkDone(data, results, logResults)
+//      })
+//    })
+//    checkDone(data, results, logResults)
+
+//    function chunk(arr, chunkSize){
+//      var numChunks = Math.ceil(arr.length / chunkSize);
+//      var chunks = [];
+//      for(i = 0; i < arr.length; i += chunkSize){
+//        var end = i + chunkSize;
+//        if(end > arr.length) end = arr.length;
+//        chunks.push(arr.slice(i, end));
+//      }
+//      return chunks
+//    }
+
+    var doneCount = 0;
+    var chunks = array.chunk(data.extra, 300);
+    //debugger;
+    chunks.forEach(function(chunk){
+      new Promise(function(resolve){
+          uploadFiles(s3,config, chunk, function(err, data, file){
+            doneCount++;
+            if(doneCount == chunks.length) debugger;
+            debugger;
+            resolve()
+          })
       })
     })
-    checkDone(data, results, logResults)
   })
 }
 
