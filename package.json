@@ -3,11 +3,7 @@
   "version": "2.1.0",
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
-  "scripts": {
-    "test": "node test/index.js | faucet",
-    "lint": "snazzy",
-    "prepublish": "npm prune && npm ls && npm run lint && npm test"
-  },
+  "scripts": {},
   "bin": {
     "s3-website": "./s3-website.js"
   },
@@ -37,6 +33,8 @@
     "deep-diff": "^0.3.4",
     "dotenv": "^2.0.0",
     "glob": "^7.1.1",
+    "graceful-fs": "^4.1.11",
+    "lodash": "^4.17.4",
     "log-update": "^1.0.2",
     "merge-defaults": "^0.2.1",
     "mime": "^1.3.4",
