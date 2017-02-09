@@ -342,12 +342,18 @@ function deleteFile (s3, config, file, cb) {
   })
 }
 
-function uploadFiles(s3, config, files, cb, index = 0){
+function uploadFiles(s3, config, files, cb, results = {uploaded: [], errors:[]}){
+  const index = results.uploaded.length + results.errors.length
   uploadFile(s3,config, files[index], function(err, data, file){
      console.log("Finished: ", index, " of ", files.length);
+    if(err){
+      results.errors.push(file)
+    } else {
+      results.uploaded.push(file)
+    }
 
-    if(index ==  files.length - 1) return cb(err, data, file);
-    uploadFiles(s3, config, files, cb, index + 1);
+    if(index ==  files.length - 1) return cb(err, data, results);
+    uploadFiles(s3, config, files, cb, results);
   });
 }
 
@@ -383,27 +389,29 @@ function checkDone (allFiles, results, cb) {
   }
 }
 
-//function chunkedUpload(arr){
-//  var result = {
-//    uploaded: [],
-//    errors: []
-//  };
-//
-//  array.chunk(arr, 1500).forEach(function(chunk){
-//    new Promise(function(resolve){
-//      uploadFiles(s3,config, chunk, function(err, data, file){
-//        if(err){
-//          errors.push(file)
-//        } else { uploaded.push(file) }
-//
-//        if(uploaded.length + errors.length == arr.length){ cb(err, data, file)}
-//        resolve()
-//      })
-//    })
-//  })
-//
-//  return result;
-//}
+function chunkedUpload(s3, config, arr, cb){
+  var result = {
+    uploaded: [],
+    errors: []
+  };
+
+  const chunks = array.chunk(arr, 300)
+  chunks.forEach(function(chunk){
+    new Promise(function(resolve){
+      uploadFiles(s3,config, chunk, function(err, data, results){
+        if(err){return cb(err)}
+        result.uploaded.concat(results.uploaded)
+        result.errors.concat(results.errors)
+
+        const numFinished = result.uploaded.length + result.errors.length
+        if(numFinished  == arr.length){ cb(err, data, result)}
+        resolve()
+      })
+    })
+  })
+
+  return result;
+}
 
 function putWebsiteContent (s3, config, cb) {
   if (typeof cb !== 'function') { cb = function () {} }
@@ -476,19 +484,25 @@ function putWebsiteContent (s3, config, cb) {
 //      return chunks
 //    }
 
-    var doneCount = 0;
-    var chunks = array.chunk(data.extra, 300);
-    //debugger;
-    chunks.forEach(function(chunk){
-      new Promise(function(resolve){
-          uploadFiles(s3,config, chunk, function(err, data, file){
-            doneCount++;
-            if(doneCount == chunks.length) debugger;
-            debugger;
-            resolve()
-          })
-      })
-    })
+//    var doneCount = 0;
+//    var chunks = array.chunk(data.extra, 300);
+//    //debugger;
+//    chunks.forEach(function(chunk){
+//      new Promise(function(resolve){
+//          uploadFiles(s3,config, chunk, function(err, data, file){
+//            doneCount++;
+//            if(doneCount == chunks.length) debugger;
+//            debugger;
+//            resolve()
+//          })
+//      })
+//    })
+
+
+   var result = chunkedUpload(s3, config, data.extra, function(err, data, results){
+     debugger;
+   })
+
   })
 }
 
