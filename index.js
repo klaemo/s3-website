@@ -330,6 +330,24 @@ function normalizeKey (prefix, key) {
   return prefix ? prefix + '/' + key : key
 }
 
+// Perform an action on an array of items, action will be invoked again after
+// the prior item has finished
+function sequentially(s3, config, action, files, cb, results = {done: [], errors:[]}){
+  const index = results.done.length + results.errors.length
+  action(s3,config, files[index], function(err, data, file){
+    if(err){
+      results.errors.push(file)
+    } else {
+      results.done.push(file)
+    }
+
+    if(index ==  files.length - 1){
+      return cb(err, data, results);
+    }
+    sequentially(s3, config, action, files, cb, results);
+  });
+}
+
 function deleteFile (s3, config, file, cb) {
   var params = {
     Bucket: config.domain,
@@ -340,23 +358,6 @@ function deleteFile (s3, config, file, cb) {
     if (err && cb) { return cb(err) }
     if (cb) { cb(err, data, file) }
   })
-}
-
-function uploadFiles(s3, config, files, cb, results = {done: [], errors:[]}){
-  const index = results.done.length + results.errors.length
-  uploadFile(s3,config, files[index], function(err, data, file){
-     console.log("Finished: ", index, " of ", files.length);
-    if(err){
-      results.errors.push(file)
-    } else {
-      results.done.push(file)
-    }
-
-    if(index ==  files.length - 1){
-      return cb(err, data, results);
-    }
-    uploadFiles(s3, config, files, cb, results);
-  });
 }
 
 function uploadFile (s3, config, file, cb) {
@@ -387,7 +388,7 @@ function checkDone (allFiles, results, cb) {
     return prev.concat(current)
   }, []).length
 
-  console.log("Finished: ", fileResults, " of ", totalFiles);
+  logUpdate("Finished uploading: " + fileResults + " of " + totalFiles)
   if (fileResults >= totalFiles && cb) {
     if (totalFiles > 0) { logUpdate('Done Uploading') }
     cb(null, results)
@@ -416,10 +417,18 @@ function chunkedAction(s3, config, action, arr, cb){
         if(numFinished  == arr.length){ cb(err, data, result)}
         resolve()
       })
-    })
+    }).catch(function(e){ console.error(err) })
   })
 
   return result;
+}
+
+function deleteFiles(s3, config, files, cb, results = {done: [], errors:[]}){
+  sequentially(s3, config, deleteFile, files, cb)
+}
+
+function uploadFiles(s3, config, files, cb, results = {done: [], errors:[]}){
+  sequentially(s3, config, uploadFile, files, cb)
 }
 
 function putWebsiteContent (s3, config, cb) {
@@ -445,7 +454,6 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     function logResults (err, results) {
-      debugger;
       if (err) { return cb(err) }
       var params = { Bucket: config.domain }
       s3.getBucketWebsite(params, function (err, website) {
@@ -455,33 +463,19 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     // Delete files that exist on s3, but not locally
-//    data.missing.forEach(function (file) {
-//      deleteFile(s3, config, file, function (err, fileData, file) {
-//        if (err) { return results.errors.push(err) }
-//        results.removed.push(file)
-//        checkDone(data, results, logResults)
-//      })
-//    })
      chunkedAction(
        s3,
        config,
-       uploadFiles,
-       data.changed,
+       deleteFiles,
+       data.missing,
        function(err, data, result){
-         results.updated = results.updated.concat(result.done)
+         results.removed = results.removed.concat(result.done)
          results.errors = results.errors.concat(result.errors)
          checkDone(data, results, logResults)
        })
 
 
     // Upload changed files
-//    data.changed.forEach(function (file) {
-//      uploadFile(s3, config, file, function (err, fileData, file) {
-//        if (err) { return results.errors.push(err) }
-//        results.updated.push(file)
-//        checkDone(data, results, logResults)
-//      })
-//    })
      chunkedAction(
        s3,
        config,
@@ -493,19 +487,7 @@ function putWebsiteContent (s3, config, cb) {
          checkDone(data, results, logResults)
        })
 
-
-
-    // Upload files that exist locally but not on s3
-//    data.extra.forEach(function (file) {
-//      uploadFile(s3, config, file, function (err, fileData, file) {
-//        if (err) { return results.errors.push(err) }
-//        results.uploaded.push(file)
-//        checkDone(data, results, logResults)
-//      })
-//    })
-//    checkDone(data, results, logResults)
-
-
+     // Upload files that exist locally but not on s3
      chunkedAction(
        s3,
        config,
@@ -516,6 +498,9 @@ function putWebsiteContent (s3, config, cb) {
          results.errors = results.errors.concat(result.errors)
          checkDone(data, results, logResults)
        })
+
+     checkDone(data, results, logResults)
+
   })
 }
 
