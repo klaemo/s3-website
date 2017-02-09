@@ -62,6 +62,137 @@ var defaultWebsiteConfig = {
   }
 }
 
+
+// Perform an action on an array of items, action will be invoked again after
+// the prior item has finished
+function sequentially(s3, config, action, files, cb, results = {done: [], errors:[]}){
+  const index = results.done.length + results.errors.length
+  action(s3,config, files[index], function(err, data, file){
+    if(err){
+      results.errors.push(file)
+    } else {
+      results.done.push(file)
+    }
+
+    if(index ==  files.length - 1){
+      return cb(err, data, results);
+    }
+    sequentially(s3, config, action, files, cb, results);
+  });
+}
+
+function retry(s3, config, allFiles, errors, cb){
+  debugger;
+  var results = {
+    updated: [],
+    uploaded: [],
+    removed: [],
+    errors: []
+  };
+
+  function deletionDone(err, data, file){
+     if(err){
+       results.errors.push(file)
+     } else {
+       results.removed.push(file)
+     }
+     checkDone(allFiles, results, function(err, results){cb(err, results)})
+   }
+
+   function uploadDone(err, data, file){
+     if(err){
+       results.errors.push(file)
+     } else {
+       results.uploaded.push(file)
+     }
+     checkDone(allFiles, results, function(err, results){cb(err, results)})
+   }
+
+  errors.forEach(function(error){
+    if(allFiles.missing.find(function(file){ file == error})){
+       deleteFile (s3, config, file, deletionDone)
+    } else {
+       uploadFile (s3, config, file, uploadDone)
+    }
+  })
+}
+
+function checkDone (allFiles, results, cb) {
+  var files = [allFiles.missing, allFiles.changed, allFiles.extra]
+  var finished = [results.uploaded, results.updated, results.removed, results.errors]
+  var totalFiles = files.reduce(function (prev, current) {
+    return prev.concat(current)
+  }, []).length
+  var fileResults = finished.reduce(function (prev, current) {
+    return prev.concat(current)
+  }, []).length
+
+  logUpdate("Finished uploading: " + fileResults + " of " + totalFiles)
+  if (fileResults >= totalFiles && cb) {
+    if(results.errors.length > 0){ }
+    if (totalFiles > 0) { logUpdate('Done Uploading') }
+    cb(null, results)
+  }
+}
+
+function deleteFile (s3, config, file, cb) {
+  var params = {
+    Bucket: config.domain,
+    Key: normalizeKey(config.prefix, file)
+  }
+  logUpdate('Removing: ' + file)
+  s3.deleteObject(params, function (err, data) {
+    if (err && cb) { return cb(err, data, file) }
+    if (cb) { cb(err, data, file) }
+  })
+}
+
+function uploadFile (s3, config, file, cb) {
+  var params = {
+    Bucket: config.domain,
+    Key: normalizeKey(config.prefix, file),
+    Body: fs.createReadStream(path.join(config.uploadDir, file)),
+    ContentType: mime.lookup(file)
+  }
+
+  logUpdate('Uploading: ' + file)
+  s3.putObject(params, function (err, data) {
+    if (err && cb) {
+      console.error(err)
+      return cb(err, data, file)
+    }
+    if (cb) { cb(err, data, file) }
+  })
+}
+
+function chunkedAction(s3, config, action, arr, cb){
+  var result = {
+    done: [],
+    errors: []
+  };
+
+  const chunks = array.chunk(arr, 300)
+  chunks.forEach(function(chunk){
+    new Promise(function(resolve, reject){
+      action(s3,config, chunk, function(err, data, results){
+        if(err){
+          cb(err)
+          return reject(err)
+        }
+
+        result.done = result.done.concat(results.done)
+        result.errors = result.errors.concat(results.errors)
+
+        const numFinished = result.done.length + result.errors.length
+        if(numFinished  == arr.length){ cb(err, data, result)}
+        resolve()
+      })
+    }).catch(function(e){ console.error(err) })
+  })
+
+  return result;
+}
+
 function s3site (config, cb) {
   if (typeof cb !== 'function') cb = function () {}
 
@@ -102,7 +233,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region })
+  var s3 = new AWS.S3({ region: config.region, maxRetries:30 })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
@@ -330,99 +461,6 @@ function normalizeKey (prefix, key) {
   return prefix ? prefix + '/' + key : key
 }
 
-// Perform an action on an array of items, action will be invoked again after
-// the prior item has finished
-function sequentially(s3, config, action, files, cb, results = {done: [], errors:[]}){
-  const index = results.done.length + results.errors.length
-  action(s3,config, files[index], function(err, data, file){
-    if(err){
-      results.errors.push(file)
-    } else {
-      results.done.push(file)
-    }
-
-    if(index ==  files.length - 1){
-      return cb(err, data, results);
-    }
-    sequentially(s3, config, action, files, cb, results);
-  });
-}
-
-function deleteFile (s3, config, file, cb) {
-  var params = {
-    Bucket: config.domain,
-    Key: normalizeKey(config.prefix, file)
-  }
-  logUpdate('Removing: ' + file)
-  s3.deleteObject(params, function (err, data) {
-    if (err && cb) { return cb(err) }
-    if (cb) { cb(err, data, file) }
-  })
-}
-
-function uploadFile (s3, config, file, cb) {
-  var params = {
-    Bucket: config.domain,
-    Key: normalizeKey(config.prefix, file),
-    Body: fs.createReadStream(path.join(config.uploadDir, file)),
-    ContentType: mime.lookup(file)
-  }
-
-  logUpdate('Uploading: ' + file)
-  s3.putObject(params, function (err, data) {
-    if (err && cb) {
-      console.error(err)
-        return cb(err, file)
-    }
-    if (cb) { cb(err, data, file) }
-  })
-}
-
-function checkDone (allFiles, results, cb) {
-  var files = [allFiles.missing, allFiles.changed, allFiles.extra]
-  var finished = [results.uploaded, results.updated, results.removed, results.errors]
-  var totalFiles = files.reduce(function (prev, current) {
-    return prev.concat(current)
-  }, []).length
-  var fileResults = finished.reduce(function (prev, current) {
-    return prev.concat(current)
-  }, []).length
-
-  logUpdate("Finished uploading: " + fileResults + " of " + totalFiles)
-  if (fileResults >= totalFiles && cb) {
-    if (totalFiles > 0) { logUpdate('Done Uploading') }
-    cb(null, results)
-  }
-}
-
-function chunkedAction(s3, config, action, arr, cb){
-  var result = {
-    done: [],
-    errors: []
-  };
-
-  const chunks = array.chunk(arr, 300)
-  chunks.forEach(function(chunk){
-    new Promise(function(resolve, reject){
-      action(s3,config, chunk, function(err, data, results){
-        if(err){
-          cb(err)
-          return reject(err)
-        }
-
-        result.done = result.done.concat(results.done)
-        result.errors = result.errors.concat(results.errors)
-
-        const numFinished = result.done.length + result.errors.length
-        if(numFinished  == arr.length){ cb(err, data, result)}
-        resolve()
-      })
-    }).catch(function(e){ console.error(err) })
-  })
-
-  return result;
-}
-
 function deleteFiles(s3, config, files, cb, results = {done: [], errors:[]}){
   sequentially(s3, config, deleteFile, files, cb)
 }
@@ -462,6 +500,15 @@ function putWebsiteContent (s3, config, cb) {
       })
     }
 
+    function handleRetry(err, results){
+      debugger
+      if(results.errors.length > 0){
+        retry(s3, config, results, results.errors, logResults)
+        return
+      }
+      logResults(err, results)
+    }
+
     // Delete files that exist on s3, but not locally
      chunkedAction(
        s3,
@@ -471,7 +518,7 @@ function putWebsiteContent (s3, config, cb) {
        function(err, data, result){
          results.removed = results.removed.concat(result.done)
          results.errors = results.errors.concat(result.errors)
-         checkDone(data, results, logResults)
+         checkDone(data, results, handleRetry)
        })
 
 
@@ -484,7 +531,7 @@ function putWebsiteContent (s3, config, cb) {
        function(err, data, result){
          results.updated = results.updated.concat(result.done)
          results.errors = results.errors.concat(result.errors)
-         checkDone(data, results, logResults)
+         checkDone(data, results, handleRetry)
        })
 
      // Upload files that exist locally but not on s3
@@ -496,15 +543,22 @@ function putWebsiteContent (s3, config, cb) {
        function(err, data, result){
          results.uploaded = results.uploaded.concat(result.done)
          results.errors = results.errors.concat(result.errors)
-         checkDone(data, results, logResults)
+         checkDone(data, results, handleRetry)
        })
 
-     checkDone(data, results, logResults)
-
+     checkDone(data, results, handleRetry)
   })
 }
 
+var utilities = {
+  retry: retry, 
+  sequentially: sequentially,
+  chunkedAction: chunkedAction, 
+  checkDone, checkDone
+};
+
 module.exports = {
+  utils: utilities,
   s3site: s3site,
   deploy: putWebsiteContent,
   config: getConfig,
