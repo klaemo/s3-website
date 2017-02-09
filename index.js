@@ -342,17 +342,19 @@ function deleteFile (s3, config, file, cb) {
   })
 }
 
-function uploadFiles(s3, config, files, cb, results = {uploaded: [], errors:[]}){
-  const index = results.uploaded.length + results.errors.length
+function uploadFiles(s3, config, files, cb, results = {done: [], errors:[]}){
+  const index = results.done.length + results.errors.length
   uploadFile(s3,config, files[index], function(err, data, file){
      console.log("Finished: ", index, " of ", files.length);
     if(err){
       results.errors.push(file)
     } else {
-      results.uploaded.push(file)
+      results.done.push(file)
     }
 
-    if(index ==  files.length - 1) return cb(err, data, results);
+    if(index ==  files.length - 1){
+      return cb(err, data, results);
+    }
     uploadFiles(s3, config, files, cb, results);
   });
 }
@@ -367,7 +369,10 @@ function uploadFile (s3, config, file, cb) {
 
   logUpdate('Uploading: ' + file)
   s3.putObject(params, function (err, data) {
-    if (err && cb) { return cb(err) }
+    if (err && cb) {
+      console.error(err)
+        return cb(err, file)
+    }
     if (cb) { cb(err, data, file) }
   })
 }
@@ -382,28 +387,32 @@ function checkDone (allFiles, results, cb) {
     return prev.concat(current)
   }, []).length
 
-  //console.log("Finished: ", fileResults, " of ", totalFiles);
+  console.log("Finished: ", fileResults, " of ", totalFiles);
   if (fileResults >= totalFiles && cb) {
     if (totalFiles > 0) { logUpdate('Done Uploading') }
     cb(null, results)
   }
 }
 
-function chunkedUpload(s3, config, arr, cb){
+function chunkedAction(s3, config, action, arr, cb){
   var result = {
-    uploaded: [],
+    done: [],
     errors: []
   };
 
   const chunks = array.chunk(arr, 300)
   chunks.forEach(function(chunk){
-    new Promise(function(resolve){
-      uploadFiles(s3,config, chunk, function(err, data, results){
-        if(err){return cb(err)}
-        result.uploaded.concat(results.uploaded)
-        result.errors.concat(results.errors)
+    new Promise(function(resolve, reject){
+      action(s3,config, chunk, function(err, data, results){
+        if(err){
+          cb(err)
+          return reject(err)
+        }
 
-        const numFinished = result.uploaded.length + result.errors.length
+        result.done = result.done.concat(results.done)
+        result.errors = result.errors.concat(results.errors)
+
+        const numFinished = result.done.length + result.errors.length
         if(numFinished  == arr.length){ cb(err, data, result)}
         resolve()
       })
@@ -453,6 +462,17 @@ function putWebsiteContent (s3, config, cb) {
 //        checkDone(data, results, logResults)
 //      })
 //    })
+     chunkedAction(
+       s3,
+       config,
+       uploadFiles,
+       data.changed,
+       function(err, data, result){
+         results.updated = results.updated.concat(result.done)
+         results.errors = results.errors.concat(result.errors)
+         checkDone(data, results, logResults)
+       })
+
 
     // Upload changed files
 //    data.changed.forEach(function (file) {
@@ -462,6 +482,18 @@ function putWebsiteContent (s3, config, cb) {
 //        checkDone(data, results, logResults)
 //      })
 //    })
+     chunkedAction(
+       s3,
+       config,
+       uploadFiles,
+       data.changed,
+       function(err, data, result){
+         results.updated = results.updated.concat(result.done)
+         results.errors = results.errors.concat(result.errors)
+         checkDone(data, results, logResults)
+       })
+
+
 
     // Upload files that exist locally but not on s3
 //    data.extra.forEach(function (file) {
@@ -473,36 +505,17 @@ function putWebsiteContent (s3, config, cb) {
 //    })
 //    checkDone(data, results, logResults)
 
-//    function chunk(arr, chunkSize){
-//      var numChunks = Math.ceil(arr.length / chunkSize);
-//      var chunks = [];
-//      for(i = 0; i < arr.length; i += chunkSize){
-//        var end = i + chunkSize;
-//        if(end > arr.length) end = arr.length;
-//        chunks.push(arr.slice(i, end));
-//      }
-//      return chunks
-//    }
 
-//    var doneCount = 0;
-//    var chunks = array.chunk(data.extra, 300);
-//    //debugger;
-//    chunks.forEach(function(chunk){
-//      new Promise(function(resolve){
-//          uploadFiles(s3,config, chunk, function(err, data, file){
-//            doneCount++;
-//            if(doneCount == chunks.length) debugger;
-//            debugger;
-//            resolve()
-//          })
-//      })
-//    })
-
-
-   var result = chunkedUpload(s3, config, data.extra, function(err, data, results){
-     debugger;
-   })
-
+     chunkedAction(
+       s3,
+       config,
+       uploadFiles,
+       data.extra,
+       function(err, data, result){
+         results.uploaded = results.uploaded.concat(result.done)
+         results.errors = results.errors.concat(result.errors)
+         checkDone(data, results, logResults)
+       })
   })
 }
 
