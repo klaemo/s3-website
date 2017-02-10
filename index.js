@@ -20,7 +20,8 @@ var defaultConfig = {
   uploadDir: '.',
   prefix: '',
   corsConfiguration: [],
-  enableCloudfront: false
+  enableCloudfront: false,
+  retries: 20
 }
 
 var templateConfig = Object.assign({},
@@ -180,10 +181,7 @@ function uploadFile (s3, config, file, cb) {
 
   logUpdate('Uploading: ' + file)
   s3.putObject(params, function (err, data) {
-    if (err && cb) {
-      console.error(err)
-      return cb(err, data, file)
-    }
+    if (err && cb) { return cb(err, data, file) }
     if (cb) { cb(err, data, file) }
   })
 }
@@ -194,7 +192,7 @@ function chunkedAction (s3, config, action, arr, cb) {
     errors: []
   }
 
-  var numWorkers = 400
+  var numWorkers = 200
   var chunkSize = Math.ceil(arr.length / numWorkers)
   var chunks = array.chunk(arr, chunkSize)
   chunks.forEach(function (chunk) {
@@ -255,7 +253,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region, maxRetries: 30 })
+  var s3 = new AWS.S3({ region: config.region, maxRetries: config.retries })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
