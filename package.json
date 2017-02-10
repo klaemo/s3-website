@@ -3,7 +3,11 @@
   "version": "2.1.0",
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "node test/index.js | faucet",
+    "lint": "snazzy",
+    "prepublish": "npm prune && npm ls && npm run lint && npm test"
+  },
   "bin": {
     "s3-website": "./s3-website.js"
   },

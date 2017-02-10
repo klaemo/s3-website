@@ -1,6 +1,7 @@
 var test = require('tape')
 var supertest = require('supertest')
 var s3site = require('../').s3site
+var s3Utils = require('../').utils
 var AWS = require('aws-sdk')
 
 var config = {
@@ -152,6 +153,20 @@ test('update website', function (t) {
       t.pass('deleted ' + config.domain)
       t.end()
     })
+  })
+})
+
+test('sequentially', function (t) {
+  var counter = 0
+  var action = function (s3, config, file, cb) {
+    counter++
+    cb()
+  }
+  var arr = [1, 2, 3, 4, 5]
+
+  s3Utils.sequentially(null, null, action, arr, function () {
+    t.equal(counter, 5)
+    t.end()
   })
 })
 

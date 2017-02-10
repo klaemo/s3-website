@@ -12,7 +12,7 @@ var mime = require('mime')
 require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
 var logUpdate = require('log-update')
-var array = require('lodash/array');
+var array = require('lodash/array')
 
 var defaultConfig = {
   index: 'index.html',
@@ -62,57 +62,80 @@ var defaultWebsiteConfig = {
   }
 }
 
-
 // Perform an action on an array of items, action will be invoked again after
 // the prior item has finished
-function sequentially(s3, config, action, files, cb, results = {done: [], errors:[]}){
+function sequentially (s3, config, action, files, cb, results = {done: [], errors: []}) {
   const index = results.done.length + results.errors.length
-  action(s3,config, files[index], function(err, data, file){
-    if(err){
+  action(s3, config, files[index], function (err, data, file) {
+    if (err) {
       results.errors.push(file)
     } else {
       results.done.push(file)
     }
 
-    if(index ==  files.length - 1){
-      return cb(err, data, results);
+    if (index === files.length - 1) {
+      return cb(err, data, results)
     }
-    sequentially(s3, config, action, files, cb, results);
-  });
+    sequentially(s3, config, action, files, cb, results)
+  })
 }
 
-function retry(s3, config, allFiles, errors, cb){
-  debugger;
+function mergeResults (oldResult, newResult) {
+  var updated = oldResult.updated.concat(newResult.updated)
+  var uploaded = oldResult.uploaded.concat(newResult.uploaded)
+  var removed = oldResult.removed.concat(newResult.removed)
+  var errors = newResult.errors
+
+  return {
+    updated: array.uniq(updated),
+    uploaded: array.uniq(uploaded),
+    removed: array.uniq(removed),
+    errors: errors
+  }
+}
+
+function retry (s3, config, allFiles, currentResults, cb) {
   var results = {
     updated: [],
     uploaded: [],
     removed: [],
     errors: []
-  };
+  }
 
-  function deletionDone(err, data, file){
-     if(err){
-       results.errors.push(file)
-     } else {
-       results.removed.push(file)
-     }
-     checkDone(allFiles, results, function(err, results){cb(err, results)})
-   }
+  var retryFiles = {
+    missing: [],
+    changed: [],
+    extra: currentResults.errors
+  }
 
-   function uploadDone(err, data, file){
-     if(err){
-       results.errors.push(file)
-     } else {
-       results.uploaded.push(file)
-     }
-     checkDone(allFiles, results, function(err, results){cb(err, results)})
-   }
-
-  errors.forEach(function(error){
-    if(allFiles.missing.find(function(file){ file == error})){
-       deleteFile (s3, config, file, deletionDone)
+  function deletionDone (err, data, file) {
+    if (err) {
+      results.errors.push(file)
     } else {
-       uploadFile (s3, config, file, uploadDone)
+      results.removed.push(file)
+    }
+    checkDone(retryFiles, results, function (err, results) {
+      cb(err, mergeResults(currentResults, results))
+    })
+  }
+
+  function uploadDone (err, data, file) {
+    if (err) {
+      results.errors.push(file)
+    } else {
+      results.uploaded.push(file)
+    }
+    checkDone(retryFiles, results, function (err, results) {
+      cb(err, mergeResults(currentResults, results))
+    })
+  }
+
+  logUpdate('Retrying failed actions')
+  currentResults.errors.forEach(function (error) {
+    if (allFiles.missing.find(function (file) { file === error })) {
+      deleteFile(s3, config, error, deletionDone)
+    } else {
+      uploadFile(s3, config, error, uploadDone)
     }
   })
 }
@@ -127,9 +150,9 @@ function checkDone (allFiles, results, cb) {
     return prev.concat(current)
   }, []).length
 
-  logUpdate("Finished uploading: " + fileResults + " of " + totalFiles)
+  logUpdate('Finished Uploading ' + fileResults + ' of ' + totalFiles)
   if (fileResults >= totalFiles && cb) {
-    if(results.errors.length > 0){ }
+    if (results.errors.length > 0) { }
     if (totalFiles > 0) { logUpdate('Done Uploading') }
     cb(null, results)
   }
@@ -165,32 +188,31 @@ function uploadFile (s3, config, file, cb) {
   })
 }
 
-function chunkedAction(s3, config, action, arr, cb){
+function chunkedAction (s3, config, action, arr, cb) {
   var result = {
     done: [],
     errors: []
-  };
+  }
 
-  const chunks = array.chunk(arr, 300)
-  chunks.forEach(function(chunk){
-    new Promise(function(resolve, reject){
-      action(s3,config, chunk, function(err, data, results){
-        if(err){
-          cb(err)
-          return reject(err)
-        }
+  var numWorkers = 400
+  var chunkSize = Math.ceil(arr.length / numWorkers)
+  var chunks = array.chunk(arr, chunkSize)
+  chunks.forEach(function (chunk) {
+    new Promise(function (resolve, reject) {
+      action(s3, config, chunk, function (err, data, results) {
+        if (err) { console.error(err) }
 
         result.done = result.done.concat(results.done)
         result.errors = result.errors.concat(results.errors)
 
-        const numFinished = result.done.length + result.errors.length
-        if(numFinished  == arr.length){ cb(err, data, result)}
+        var numFinished = result.done.length + result.errors.length
+        if (numFinished === arr.length) { cb(err, data, result) }
         resolve()
       })
-    }).catch(function(e){ console.error(err) })
+    }).catch(function (e) { console.error(e) })
   })
 
-  return result;
+  return result
 }
 
 function s3site (config, cb) {
@@ -233,7 +255,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region, maxRetries:30 })
+  var s3 = new AWS.S3({ region: config.region, maxRetries: 30 })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
@@ -461,11 +483,11 @@ function normalizeKey (prefix, key) {
   return prefix ? prefix + '/' + key : key
 }
 
-function deleteFiles(s3, config, files, cb, results = {done: [], errors:[]}){
+function deleteFiles (s3, config, files, cb, results = {done: [], errors: []}) {
   sequentially(s3, config, deleteFile, files, cb)
 }
 
-function uploadFiles(s3, config, files, cb, results = {done: [], errors:[]}){
+function uploadFiles (s3, config, files, cb, results = {done: [], errors: []}) {
   sequentially(s3, config, uploadFile, files, cb)
 }
 
@@ -500,62 +522,63 @@ function putWebsiteContent (s3, config, cb) {
       })
     }
 
-    function handleRetry(err, results){
-      debugger
-      if(results.errors.length > 0){
-        retry(s3, config, results, results.errors, logResults)
+    function handleRetry (err, results) {
+      if (results.errors.length > 0) {
+        retry(s3, config, data, results, logResults)
         return
       }
       logResults(err, results)
     }
 
     // Delete files that exist on s3, but not locally
-     chunkedAction(
+    chunkedAction(
        s3,
        config,
        deleteFiles,
        data.missing,
-       function(err, data, result){
+       function (err, data, result) {
+         if (err) { console.error(err) }
          results.removed = results.removed.concat(result.done)
          results.errors = results.errors.concat(result.errors)
          checkDone(data, results, handleRetry)
        })
 
-
     // Upload changed files
-     chunkedAction(
+    chunkedAction(
        s3,
        config,
        uploadFiles,
        data.changed,
-       function(err, data, result){
+       function (err, data, result) {
+         if (err) { console.error(err) }
          results.updated = results.updated.concat(result.done)
          results.errors = results.errors.concat(result.errors)
          checkDone(data, results, handleRetry)
        })
 
      // Upload files that exist locally but not on s3
-     chunkedAction(
+    chunkedAction(
        s3,
        config,
        uploadFiles,
        data.extra,
-       function(err, data, result){
+       function (err, data, result) {
+         if (err) { console.error(err) }
          results.uploaded = results.uploaded.concat(result.done)
          results.errors = results.errors.concat(result.errors)
          checkDone(data, results, handleRetry)
        })
 
-     checkDone(data, results, handleRetry)
+    checkDone(data, results, handleRetry)
   })
 }
 
 var utilities = {
-  retry: retry, 
+  retry: retry,
   sequentially: sequentially,
-  chunkedAction: chunkedAction, 
-  checkDone, checkDone
-};
+  chunkedAction: chunkedAction,
+  checkDone: checkDone
+}
 
 module.exports = {
   utils: utilities,
