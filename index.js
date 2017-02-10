@@ -7,11 +7,12 @@ var url = require('url')
 var cloudfront = require('cloudfront-tls')
 var diff = require('deep-diff').diff
 var assign = require('object-assign')
-var fs = require('fs')
+var fs = require('graceful-fs')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
 var logUpdate = require('log-update')
+var array = require('lodash/array')
 
 var defaultConfig = {
   index: 'index.html',
@@ -19,7 +20,8 @@ var defaultConfig = {
   uploadDir: '.',
   prefix: '',
   corsConfiguration: [],
-  enableCloudfront: false
+  enableCloudfront: false,
+  retries: 20
 }
 
 var templateConfig = Object.assign({},
@@ -59,6 +61,156 @@ var defaultWebsiteConfig = {
       Suffix: defaultConfig.index /* required */
     }
   }
+}
+
+// Perform an action on an array of items, action will be invoked again after
+// the prior item has finished
+function sequentially (s3, config, action, files, cb, results = {done: [], errors: []}) {
+  const index = results.done.length + results.errors.length
+  action(s3, config, files[index], function (err, data, file) {
+    if (err) {
+      results.errors.push(file)
+    } else {
+      results.done.push(file)
+    }
+
+    if (index === files.length - 1) {
+      return cb(err, data, results)
+    }
+    sequentially(s3, config, action, files, cb, results)
+  })
+}
+
+function mergeResults (oldResult, newResult) {
+  var updated = oldResult.updated.concat(newResult.updated)
+  var uploaded = oldResult.uploaded.concat(newResult.uploaded)
+  var removed = oldResult.removed.concat(newResult.removed)
+  var errors = newResult.errors
+
+  return {
+    updated: array.uniq(updated),
+    uploaded: array.uniq(uploaded),
+    removed: array.uniq(removed),
+    errors: errors
+  }
+}
+
+function retry (s3, config, allFiles, currentResults, cb) {
+  var results = {
+    updated: [],
+    uploaded: [],
+    removed: [],
+    errors: []
+  }
+
+  var retryFiles = {
+    missing: [],
+    changed: [],
+    extra: currentResults.errors
+  }
+
+  function deletionDone (err, data, file) {
+    if (err) {
+      results.errors.push(file)
+    } else {
+      results.removed.push(file)
+    }
+    checkDone(retryFiles, results, function (err, results) {
+      cb(err, mergeResults(currentResults, results))
+    })
+  }
+
+  function uploadDone (err, data, file) {
+    if (err) {
+      results.errors.push(file)
+    } else {
+      results.uploaded.push(file)
+    }
+    checkDone(retryFiles, results, function (err, results) {
+      cb(err, mergeResults(currentResults, results))
+    })
+  }
+
+  logUpdate('Retrying failed actions')
+  currentResults.errors.forEach(function (error) {
+    if (allFiles.missing.find(function (file) { file === error })) {
+      deleteFile(s3, config, error, deletionDone)
+    } else {
+      uploadFile(s3, config, error, uploadDone)
+    }
+  })
+}
+
+function checkDone (allFiles, results, cb) {
+  var files = [allFiles.missing, allFiles.changed, allFiles.extra]
+  var finished = [results.uploaded, results.updated, results.removed, results.errors]
+  var totalFiles = files.reduce(function (prev, current) {
+    return prev.concat(current)
+  }, []).length
+  var fileResults = finished.reduce(function (prev, current) {
+    return prev.concat(current)
+  }, []).length
+
+  logUpdate('Finished Uploading ' + fileResults + ' of ' + totalFiles)
+  if (fileResults >= totalFiles && cb) {
+    if (results.errors.length > 0) { }
+    if (totalFiles > 0) { logUpdate('Done Uploading') }
+    cb(null, results)
+  }
+}
+
+function deleteFile (s3, config, file, cb) {
+  var params = {
+    Bucket: config.domain,
+    Key: normalizeKey(config.prefix, file)
+  }
+  logUpdate('Removing: ' + file)
+  s3.deleteObject(params, function (err, data) {
+    if (err && cb) { return cb(err, data, file) }
+    if (cb) { cb(err, data, file) }
+  })
+}
+
+function uploadFile (s3, config, file, cb) {
+  var params = {
+    Bucket: config.domain,
+    Key: normalizeKey(config.prefix, file),
+    Body: fs.createReadStream(path.join(config.uploadDir, file)),
+    ContentType: mime.lookup(file)
+  }
+
+  logUpdate('Uploading: ' + file)
+  s3.putObject(params, function (err, data) {
+    if (err && cb) { return cb(err, data, file) }
+    if (cb) { cb(err, data, file) }
+  })
+}
+
+function chunkedAction (s3, config, action, arr, cb) {
+  var result = {
+    done: [],
+    errors: []
+  }
+
+  var numWorkers = 200
+  var chunkSize = Math.ceil(arr.length / numWorkers)
+  var chunks = array.chunk(arr, chunkSize)
+  chunks.forEach(function (chunk) {
+    new Promise(function (resolve, reject) {
+      action(s3, config, chunk, function (err, data, results) {
+        if (err) { console.error(err) }
+
+        result.done = result.done.concat(results.done)
+        result.errors = result.errors.concat(results.errors)
+
+        var numFinished = result.done.length + result.errors.length
+        if (numFinished === arr.length) { cb(err, data, result) }
+        resolve()
+      })
+    }).catch(function (e) { console.error(e) })
+  })
+
+  return result
 }
 
 function s3site (config, cb) {
@@ -101,7 +253,7 @@ function s3site (config, cb) {
     websiteConfig.WebsiteConfiguration.RoutingRules = loadRoutes(config.routes)
   }
 
-  var s3 = new AWS.S3({ region: config.region })
+  var s3 = new AWS.S3({ region: config.region, maxRetries: config.retries })
 
   s3.createBucket(bucketConfig, function (err, bucket) {
     if (err && err.code !== 'BucketAlreadyOwnedByYou') return cb(err)
@@ -329,47 +481,12 @@ function normalizeKey (prefix, key) {
   return prefix ? prefix + '/' + key : key
 }
 
-function deleteFile (s3, config, file, cb) {
-  var params = {
-    Bucket: config.domain,
-    Key: normalizeKey(config.prefix, file)
-  }
-  logUpdate('Removing: ' + file)
-  s3.deleteObject(params, function (err, data) {
-    if (err && cb) { return cb(err) }
-    if (cb) { cb(err, data, file) }
-  })
+function deleteFiles (s3, config, files, cb, results = {done: [], errors: []}) {
+  sequentially(s3, config, deleteFile, files, cb)
 }
 
-function uploadFile (s3, config, file, cb) {
-  var params = {
-    Bucket: config.domain,
-    Key: normalizeKey(config.prefix, file),
-    Body: fs.createReadStream(path.join(config.uploadDir, file)),
-    ContentType: mime.lookup(file)
-  }
-
-  logUpdate('Uploading: ' + file)
-  s3.putObject(params, function (err, data) {
-    if (err && cb) { return cb(err) }
-    if (cb) { cb(err, data, file) }
-  })
-}
-
-function checkDone (allFiles, results, cb) {
-  var files = [allFiles.missing, allFiles.changed, allFiles.extra]
-  var finished = [results.uploaded, results.updated, results.removed, results.errors]
-  var totalFiles = files.reduce(function (prev, current) {
-    return prev.concat(current)
-  }, []).length
-  var fileResults = finished.reduce(function (prev, current) {
-    return prev.concat(current)
-  }, []).length
-
-  if (fileResults >= totalFiles && cb) {
-    if (totalFiles > 0) { logUpdate('Done Uploading') }
-    cb(null, results)
-  }
+function uploadFiles (s3, config, files, cb, results = {done: [], errors: []}) {
+  sequentially(s3, config, uploadFile, files, cb)
 }
 
 function putWebsiteContent (s3, config, cb) {
@@ -403,37 +520,66 @@ function putWebsiteContent (s3, config, cb) {
       })
     }
 
+    function handleRetry (err, results) {
+      if (results.errors.length > 0) {
+        retry(s3, config, data, results, logResults)
+        return
+      }
+      logResults(err, results)
+    }
+
     // Delete files that exist on s3, but not locally
-    data.missing.forEach(function (file) {
-      deleteFile(s3, config, file, function (err, fileData, file) {
-        if (err) { return results.errors.push(err) }
-        results.removed.push(file)
-        checkDone(data, results, logResults)
-      })
-    })
+    chunkedAction(
+       s3,
+       config,
+       deleteFiles,
+       data.missing,
+       function (err, data, result) {
+         if (err) { console.error(err) }
+         results.removed = results.removed.concat(result.done)
+         results.errors = results.errors.concat(result.errors)
+         checkDone(data, results, handleRetry)
+       })
 
     // Upload changed files
-    data.changed.forEach(function (file) {
-      uploadFile(s3, config, file, function (err, fileData, file) {
-        if (err) { return results.errors.push(err) }
-        results.updated.push(file)
-        checkDone(data, results, logResults)
-      })
-    })
+    chunkedAction(
+       s3,
+       config,
+       uploadFiles,
+       data.changed,
+       function (err, data, result) {
+         if (err) { console.error(err) }
+         results.updated = results.updated.concat(result.done)
+         results.errors = results.errors.concat(result.errors)
+         checkDone(data, results, handleRetry)
+       })
 
-    // Upload files that exist locally but not on s3
-    data.extra.forEach(function (file) {
-      uploadFile(s3, config, file, function (err, fileData, file) {
-        if (err) { return results.errors.push(err) }
-        results.uploaded.push(file)
-        checkDone(data, results, logResults)
-      })
-    })
-    checkDone(data, results, logResults)
+     // Upload files that exist locally but not on s3
+    chunkedAction(
+       s3,
+       config,
+       uploadFiles,
+       data.extra,
+       function (err, data, result) {
+         if (err) { console.error(err) }
+         results.uploaded = results.uploaded.concat(result.done)
+         results.errors = results.errors.concat(result.errors)
+         checkDone(data, results, handleRetry)
+       })
+
+    checkDone(data, results, handleRetry)
   })
 }
 
+var utilities = {
+  retry: retry,
+  sequentially: sequentially,
+  chunkedAction: chunkedAction,
+  checkDone: checkDone
+}
+
 module.exports = {
+  utils: utilities,
   s3site: s3site,
   deploy: putWebsiteContent,
   config: getConfig,
