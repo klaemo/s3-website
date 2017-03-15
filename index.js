@@ -302,7 +302,8 @@ function parseWebsite (website, modified, config) {
   var host
 
   // Some region has a slightly differnt URL scheme :(
-  var hasDifferentScheme = ['eu-central-1', 'ap-northeast-2'].find(function (region) {
+  var dotEndpointRegions = ['us-east-2', 'ca-central-1', 'ap-south-1', 'ap-northeast-2', 'eu-central-1', 'eu-west-2']
+  var hasDifferentScheme = dotEndpointRegions.find(function (region) {
     return region === config.region
   })
 
