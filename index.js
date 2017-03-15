@@ -301,8 +301,12 @@ function s3site (config, cb) {
 function parseWebsite (website, modified, config) {
   var host
 
-  // Frankfurt has a slightly differnt URL scheme :(
-  if (config.region === 'eu-central-1') {
+  // Some region has a slightly differnt URL scheme :(
+  var hasDifferentScheme = ['eu-central-1', 'ap-northeast-2'].find(function (region) {
+    return region === config.region
+  })
+
+  if (hasDifferentScheme) {
     host = [config.domain, 's3-website', config.region, 'amazonaws.com'].join('.')
   } else {
     host = [config.domain, 's3-website-' + config.region, 'amazonaws.com'].join('.')
