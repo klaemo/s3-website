@@ -539,7 +539,7 @@ function putWebsiteContent (s3, config, cb) {
        config,
        deleteFiles,
        data.missing,
-       function (err, data, result) {
+       function (err, eTags, result) {
          if (err) { console.error(err) }
          results.removed = results.removed.concat(result.done)
          results.errors = results.errors.concat(result.errors)
@@ -552,7 +552,7 @@ function putWebsiteContent (s3, config, cb) {
        config,
        uploadFiles,
        data.changed,
-       function (err, data, result) {
+       function (err, eTags, result) {
          if (err) { console.error(err) }
          results.updated = results.updated.concat(result.done)
          results.errors = results.errors.concat(result.errors)
@@ -565,7 +565,7 @@ function putWebsiteContent (s3, config, cb) {
        config,
        uploadFiles,
        data.extra,
-       function (err, data, result) {
+       function (err, eTags, result) {
          if (err) { console.error(err) }
          results.uploaded = results.uploaded.concat(result.done)
          results.errors = results.errors.concat(result.errors)
