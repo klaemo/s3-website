@@ -83,7 +83,7 @@ program
     console.log(' ')
     console.log('  Config file: ')
     console.log('')
-    console.log('    Should be titled .s3-website.json')
+    console.log('    Should be specified using the -f flag')
     console.log('    should contain only a JSON object containing at least the keys: region, domain, uploadDir')
     console.log('')
     console.log('  To see more information about a specific command:')
@@ -109,9 +109,12 @@ program
   .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
+  .option('-f, --config-file <file>', 'Path to the config file to read')
   .action(function (domain, options) {
     var args = getCLArguments({domain: domain}, options)
-    getConfig('.s3-website.json', args, function (err, config) { // eslint-disable-line handle-callback-err
+    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
+
+    getConfig(fromCL.configFile, args, function (err, config) { // eslint-disable-line handle-callback-err
       s3site(config, function (err, website, uploadResults) {
         if (err) {
           if (options.json) {
@@ -146,9 +149,11 @@ program
   .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket] - put always this parameter last one')
+  .option('-f, --config-file <file>', 'Path to the config file to read')
   .action(function (uploadDir, options) {
     var fromCL = getCLArguments({uploadDir: uploadDir}, options)
-    getConfig('.s3-website.json', fromCL, function (err, config) { // eslint-disable-line handle-callback-err
+    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
+    getConfig(fromCL.configFile, fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       var s3 = new AWS.S3({ region: config.region })
       deploy(s3, config, printDeployResults)
     })
@@ -156,7 +161,7 @@ program
     console.log(' ')
     console.log('  Successful deployment requires: '.yellow)
     console.log('')
-    console.log('    Correct config: - passed from commandline or from config file .s3-website.json')
+    console.log('    Correct config: - passed from commandline or from config file specified with -f flag')
     console.log('      region: the region where your bucket lives, can be set by commandline flag or in config file')
     console.log('      domain: the name of your bucket, can be set by commandline flag or in config file')
     console.log('      uploadDir: the name of the directory whose contents you want to upload,' +
@@ -164,7 +169,7 @@ program
     console.log('')
     console.log('    Valid AWS credentials: - run s3-website -h for more info')
     console.log(' ')
-    console.log('  These can be supplied as command line arguments, or in a json config file .s3-website.json'.green)
+    console.log('  These can be supplied as command line arguments, or in a json config file specified with -f flag'.green)
   })
 
 program
