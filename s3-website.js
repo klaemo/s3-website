@@ -83,8 +83,8 @@ program
     console.log(' ')
     console.log('  Config file: ')
     console.log('')
-    console.log('    Should be specified using the -f flag')
-    console.log('    should contain only a JSON object containing at least the keys: region, domain, uploadDir')
+    console.log('    Should be specified using the -f flag. The default config file is .s3-website.json')
+    console.log('    Should contain only a JSON object containing at least the keys: region, domain, uploadDir')
     console.log('')
     console.log('  To see more information about a specific command:')
     console.log('    s3-website <command> -h'.green)
@@ -109,12 +109,12 @@ program
   .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
-  .option('-f, --config-file <file>', 'Path to the config file to read')
+  .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
   .action(function (domain, options) {
-    var args = getCLArguments({domain: domain}, options)
+    var fromCL = getCLArguments({domain: domain}, options)
     if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
 
-    getConfig(fromCL.configFile, args, function (err, config) { // eslint-disable-line handle-callback-err
+    getConfig(fromCL.configFile, fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       s3site(config, function (err, website, uploadResults) {
         if (err) {
           if (options.json) {
@@ -149,7 +149,7 @@ program
   .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket] - put always this parameter last one')
-  .option('-f, --config-file <file>', 'Path to the config file to read')
+  .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
   .action(function (uploadDir, options) {
     var fromCL = getCLArguments({uploadDir: uploadDir}, options)
     if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
