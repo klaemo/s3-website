@@ -112,7 +112,7 @@ program
   .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
   .action(function (domain, options) {
     var fromCL = getCLArguments({domain: domain}, options)
-    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
+    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json'
 
     getConfig(fromCL.configFile, fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       s3site(config, function (err, website, uploadResults) {
@@ -149,10 +149,13 @@ program
   .option('-p, --prefix <prefix>', 'Will upload files with the prefix [name/of/folder/to/sync/on/s3]')
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('-d, --domain <domain>', 'Name of bucket [example.bucket] - put always this parameter last one')
-  .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
+  .option(
+    '-f, --config-file <file>',
+    'Path to the config file to read. Default is .s3-website.json. Note: Using non-standard config file will require passing "-f myConfigFile" with subsequent operations'
+  )
   .action(function (uploadDir, options) {
     var fromCL = getCLArguments({uploadDir: uploadDir}, options)
-    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
+    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json'
     getConfig(fromCL.configFile, fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       var s3 = new AWS.S3({ region: config.region })
       deploy(s3, config, printDeployResults)
