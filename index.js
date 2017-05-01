@@ -133,7 +133,7 @@ function retry (s3, config, allFiles, currentResults, cb) {
 
   logUpdate('Retrying failed actions')
   currentResults.errors.forEach(function (error) {
-    if (allFiles.missing.find(function (file) { file === error })) {
+    if (allFiles.missing.find(function (file) { return file === error })) {
       deleteFile(s3, config, error, deletionDone)
     } else {
       uploadFile(s3, config, error, uploadDone)

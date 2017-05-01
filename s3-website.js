@@ -112,7 +112,7 @@ program
   .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
   .action(function (domain, options) {
     var fromCL = getCLArguments({domain: domain}, options)
-    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
+    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json'
 
     getConfig(fromCL.configFile, fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       s3site(config, function (err, website, uploadResults) {
@@ -152,7 +152,7 @@ program
   .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
   .action(function (uploadDir, options) {
     var fromCL = getCLArguments({uploadDir: uploadDir}, options)
-    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json';
+    if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json'
     getConfig(fromCL.configFile, fromCL, function (err, config) { // eslint-disable-line handle-callback-err
       var s3 = new AWS.S3({ region: config.region })
       deploy(s3, config, printDeployResults)
