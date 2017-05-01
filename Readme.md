@@ -137,6 +137,7 @@ create({
 - [mshick](https://github.com/mshick)
 - [rgruesbeck](https://github.com/rgruesbeck)
 - [nick-benoit14](https://github.com/nick-benoit14)
+- [simoncurd](https://github.com/simoncurd)
 
 ### License
 ISC
