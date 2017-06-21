@@ -72,7 +72,7 @@ create({
   domain: 'test.site.me', // required, will be the bucket name
   region: 'eu-central-1', // optional, default: us-east-1
   index: 'index.html', // optional index document, default: index.html
-  error: '404.html' // optional error document, default: none
+  error: '404.html', // optional error document, default: none
   routes: [{
     Condition: {
         KeyPrefixEquals: 'foo/'
