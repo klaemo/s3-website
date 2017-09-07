@@ -63,7 +63,7 @@ test('upload content', function (t) {
   })
 })
 
-test.skip('create www redirect', function (t) {
+test('create www redirect', function (t) {
   var subdomain = 'www.' + config.domain
   var destination = 'http://' + config.domain + '/'
 
@@ -92,7 +92,7 @@ test.skip('create www redirect', function (t) {
   })
 })
 
-test.skip('update only changed files', function (t) {
+test('update only changed files', function (t) {
   config.uploadDir = './test/fixtures'
   config.index = 'test-upload.html'
   s3site(config, function (err, website, results) {
