@@ -69,6 +69,11 @@ function printDeployResults (err, website, results) {
   }
 }
 
+function exclude (val, excludedList) {
+  excludedList.push(val)
+  return excludedList
+}
+
 program
   .usage('<command> [option]')
   .description(
@@ -110,6 +115,7 @@ program
   .option('-l, --lock-config', 'Will prevent config file from being changed')
   .option('--intermediate <intermediate certs>', 'Path to the concatenated intermediate certificates.')
   .option('-f, --config-file <file>', 'Path to the config file to read. Default is .s3-website.json')
+  .option('--exclude <path-pattern>', 'Path pattern to excluded files from being created/updated/removed. This option is repeatable', exclude, [])
   .action(function (domain, options) {
     var fromCL = getCLArguments({domain: domain}, options)
     if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json'
@@ -153,6 +159,7 @@ program
     '-f, --config-file <file>',
     'Path to the config file to read. Default is .s3-website.json. Note: Using non-standard config file will require passing "-f myConfigFile" with subsequent operations'
   )
+  .option('--exclude <path-pattern>', 'Path pattern to excluded files from being created/updated/removed. This option is repeatable', exclude, [])
   .action(function (uploadDir, options) {
     var fromCL = getCLArguments({uploadDir: uploadDir}, options)
     if (fromCL.configFile == null) fromCL.configFile = '.s3-website.json'
