@@ -73,6 +73,7 @@ create({
   region: 'eu-central-1', // optional, default: us-east-1
   index: 'index.html', // optional index document, default: index.html
   error: '404.html', // optional error document, default: none
+  exclude: ['.git/*', '.gitignore'], // optional path patterns to be excluded from being created/updated/removed, default: [], `*` is the wildcard
   routes: [{
     Condition: {
         KeyPrefixEquals: 'foo/'
@@ -138,6 +139,7 @@ create({
 - [rgruesbeck](https://github.com/rgruesbeck)
 - [nick-benoit14](https://github.com/nick-benoit14)
 - [simoncurd](https://github.com/simoncurd)
+- [StaymanHou](https://github.com/StaymanHou)
 
 ### License
 ISC

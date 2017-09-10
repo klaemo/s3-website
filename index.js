@@ -11,6 +11,7 @@ var fs = require('graceful-fs')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
 var s3diff = require('s3-diff')
+var wildcard = require('wildcard')
 var logUpdate = require('log-update')
 var array = require('lodash/array')
 
@@ -19,6 +20,7 @@ var defaultConfig = {
   region: 'us-east-1',
   uploadDir: '.',
   prefix: '',
+  exclude: [],
   corsConfiguration: [],
   enableCloudfront: false,
   retries: 20
@@ -510,6 +512,16 @@ function putWebsiteContent (s3, config, cb) {
     recursive: true
   }, function (err, data) {
     if (err) return cb(err)
+
+    // exclude files from the diff
+    config.exclude.forEach(function (excludePattern) {
+      for (var key in data) {
+        data[key] = data[key].filter(function (path) {
+          return !wildcard(excludePattern, path)
+        })
+      }
+    })
+
     var results = {
       uploaded: [],
       updated: [],
