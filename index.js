@@ -500,6 +500,8 @@ function uploadFiles (s3, config, files, cb, results = {done: [], errors: []}) {
 function putWebsiteContent (s3, config, cb) {
   if (typeof cb !== 'function') { cb = function () {} }
 
+  config = defaults(config, defaultConfig)
+
   s3diff({
     aws: {
       signatureVersion: 'v4'
