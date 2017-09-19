@@ -140,6 +140,6 @@ create({
 - [nick-benoit14](https://github.com/nick-benoit14)
 - [simoncurd](https://github.com/simoncurd)
 - [StaymanHou](https://github.com/StaymanHou)
-
+- [ChainsawHunter](https://github.com/ChainsawHunter)
 ### License
 ISC
