@@ -514,7 +514,8 @@ function putWebsiteContent (s3, config, cb) {
     if (err) return cb(err)
 
     // exclude files from the diff
-    config.exclude.forEach(function (excludePattern) {
+    var excludedFiles = config.exclude || [];
+    excludedFiles.forEach(function (excludePattern) {
       for (var key in data) {
         data[key] = data[key].filter(function (path) {
           return !wildcard(excludePattern, path)
