@@ -173,12 +173,20 @@ function deleteFile (s3, config, file, cb) {
   })
 }
 
+function getExtension(file) {
+  const spl = file.split('.');
+  return spl.length > 0 && spl[spl.length - 1];
+}
+
 function uploadFile (s3, config, file, cb) {
+  const ext = getExtension(file);
+  const contentType = config.contentTypes && config.contentTypes[ext];
+
   var params = {
     Bucket: config.domain,
     Key: normalizeKey(config.prefix, file),
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
-    ContentType: mime.lookup(file),
+    ContentType: contentType || mime.lookup(file),
     CacheControl: (config.cacheControl != null) ? config.cacheControl : null
   }
 
