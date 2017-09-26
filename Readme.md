@@ -133,6 +133,25 @@ create({
 })
 ```
 
+### Custom Content Types
+
+Sometimes you may want to change the Content Type header for specific files, for example, serve from S3
+`php` files as HTML. You can now pass an object (`contentTypes`) describing your custom needs:
+
+```
+config.contentTypes = {
+  php: 'text/html'
+}
+
+deploy(s3, config, (err, website) => {
+  if(err) {
+    throw err;
+  }
+  console.log(website);
+})
+```
+
+
 ### Contributors
 
 - [mshick](https://github.com/mshick)
