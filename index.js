@@ -173,14 +173,14 @@ function deleteFile (s3, config, file, cb) {
   })
 }
 
-function getExtension(file) {
-  const spl = file.split('.');
-  return spl.length > 0 && spl[spl.length - 1];
+function getExtension (file) {
+  const spl = file.split('.')
+  return spl.length > 0 && spl[spl.length - 1]
 }
 
 function uploadFile (s3, config, file, cb) {
-  const ext = getExtension(file);
-  const contentType = config.contentTypes && config.contentTypes[ext];
+  const ext = getExtension(file)
+  const contentType = config.contentTypes && config.contentTypes[ext]
 
   var params = {
     Bucket: config.domain,
