@@ -493,8 +493,12 @@ function getConfig (path, fromCL, cb) {
   })
 }
 
+function normalizePath(path) {
+  return path.replace(/\\/g,'/');
+}
+
 function normalizeKey (prefix, key) {
-  return prefix ? prefix + '/' + key : key
+  return normalizePath( prefix ? prefix + '/' + key : key );
 }
 
 function deleteFiles (s3, config, files, cb, results = {done: [], errors: []}) {
