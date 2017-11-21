@@ -161,5 +161,6 @@ deploy(s3, config, (err, website) => {
 - [StaymanHou](https://github.com/StaymanHou)
 - [ChainsawHunter](https://github.com/ChainsawHunter)
 - [vladejs](https://github.com/vladejs)
+- [rlyle](https://github.com/rlyle)
 ### License
 ISC
