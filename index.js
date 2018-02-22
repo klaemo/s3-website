@@ -516,7 +516,7 @@ function walkSync (dir) {
 
     return fs.readdirSync(dir).map(function(f) {
       return walkSync(path.join(dir, f))
-    }
+    })
 }
 
 function compressFile (filename) {
