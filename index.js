@@ -180,6 +180,10 @@ function getExtension (file) {
   return spl.length > 0 && spl[spl.length - 1]
 }
 
+function needsEncodingHeader(config, file) {
+  return config.gzip && rightExtensionForGzip(file)
+}
+
 function uploadFile (s3, config, file, cb) {
   const ext = getExtension(file)
   const contentType = config.contentTypes && config.contentTypes[ext]
@@ -190,6 +194,10 @@ function uploadFile (s3, config, file, cb) {
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: contentType || mime.lookup(file),
     CacheControl: (config.cacheControl != null) ? config.cacheControl : null
+  }
+
+  if (needsEncodingHeader(config, file)) {
+    params.ContentEncoding = 'gzip'
   }
 
   logUpdate('Uploading: ' + file)
@@ -519,16 +527,34 @@ function walkSync (dir) {
     })
 }
 
+function flatten(arr) {
+  return arr.reduce(function (flat, toFlatten) {
+    return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten)
+  }, [])
+}
+
+function rightExtensionForGzip(filename) {
+  return !(filename.endsWith('.js') && filename.endsWith('.html') && filename.endsWith('.css'));
+}
+
 function compressFile (filename) {
+  if (!rightExtensionForGzip(filename)) {
+    return;
+  }
+
     var compress = zlib.createGzip(),
         input = fs.createReadStream(filename),
-        output = fs.createWriteStream(filename)
+        output = fs.createWriteStream(filename + '.gz')
 
     input.pipe(compress).pipe(output)
+    fs.unlink(filename, function() {})
+    fs.rename(filename + '.gz', filename, function() {})
 }
 
 function compressDir (dir) {
-  walkSync(__dirname + dir).forEach(compressFile)
+  var files = walkSync(__dirname + '/../../' + dir)
+
+  flatten(files).forEach(compressFile)
 }
 
 function putWebsiteContent (s3, config, cb) {
