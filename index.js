@@ -528,7 +528,7 @@ function compressFile (filename) {
 }
 
 function compressDir (dir) {
-  walkSync(dir).forEach(compressFile)
+  walkSync(__dirname + dir).forEach(compressFile)
 }
 
 function putWebsiteContent (s3, config, cb) {
