@@ -14,6 +14,7 @@ var s3diff = require('s3-diff')
 var wildcard = require('wildcard')
 var logUpdate = require('log-update')
 var array = require('lodash/array')
+var zlib = require('zlib')
 
 var defaultConfig = {
   index: 'index.html',
@@ -23,7 +24,8 @@ var defaultConfig = {
   exclude: [],
   corsConfiguration: [],
   enableCloudfront: false,
-  retries: 20
+  retries: 20,
+  gzip: false
 }
 
 var templateConfig = Object.assign({},
@@ -509,10 +511,34 @@ function uploadFiles (s3, config, files, cb, results = {done: [], errors: []}) {
   sequentially(s3, config, uploadFile, files, cb)
 }
 
+function walkSync (dir) {
+    if (!fs.lstatSync(dir).isDirectory()) return dir
+
+    return fs.readdirSync(dir).map(function(f) {
+      return walkSync(path.join(dir, f)))
+    }
+}
+
+function compressFile (filename) {
+    var compress = zlib.createGzip(),
+        input = fs.createReadStream(filename),
+        output = fs.createWriteStream(filename)
+
+    input.pipe(compress).pipe(output)
+}
+
+function compressDir (dir) {
+  walkSync(dir).forEach(compressFile)
+}
+
 function putWebsiteContent (s3, config, cb) {
   if (typeof cb !== 'function') { cb = function () {} }
 
   config = defaults(config, defaultConfig)
+
+  if (config.gzip) {
+    compressDir(config.uploadDir)
+  }
 
   s3diff({
     aws: {
