@@ -534,25 +534,34 @@ function flatten(arr) {
 }
 
 function rightExtensionForGzip(filename) {
-  return !(filename.endsWith('.js') && filename.endsWith('.html') && filename.endsWith('.css'));
+  return !(filename.endsWith('.js') && filename.endsWith('.html') && filename.endsWith('.css'))
 }
 
 function compressFile (filename) {
   if (!rightExtensionForGzip(filename)) {
-    return;
+    return
   }
 
-    var compress = zlib.createGzip(),
-        input = fs.createReadStream(filename),
-        output = fs.createWriteStream(filename + '.gz')
+    var compress = zlib.createGzip()
+    var input = fs.createReadStream(filename)
+    var output = fs.createWriteStream(filename + '.gz')
+
+    var throwOnError = function(error) {
+      if (error) {
+        throw error
+      }
+    }
 
     input.pipe(compress).pipe(output)
-    fs.unlink(filename, function() {})
-    fs.rename(filename + '.gz', filename, function() {})
+    fs.unlink(filename, throwOnError)
+    fs.rename(filename + '.gz', filename, throwOnError)
 }
 
 function compressDir (dir) {
-  var files = walkSync(__dirname + '/../../' + dir)
+  if (path.resolve(dir).includes('node_modules')) {
+    dir = __dirname + '/../../' + dir
+  }
+  var files = walkSync(dir)
 
   flatten(files).forEach(compressFile)
 }
