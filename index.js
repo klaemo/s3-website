@@ -527,14 +527,14 @@ function walkSync (dir) {
     })
 }
 
-function flatten(arr) {
+function flatten (arr) {
   return arr.reduce(function (flat, toFlatten) {
     return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten)
   }, [])
 }
 
-function rightExtensionForGzip(filename) {
-  return !(filename.endsWith('.js') && filename.endsWith('.html') && filename.endsWith('.css'))
+function rightExtensionForGzip (filename) {
+  return filename.endsWith('.js') || filename.endsWith('.html') || filename.endsWith('.css')
 }
 
 function compressFile (filename) {
