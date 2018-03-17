@@ -5,7 +5,7 @@ var s3Utils = require('../').utils
 var AWS = require('aws-sdk')
 
 var config = {
-  region: 'eu-central-1', // us-east-1
+  region: 'eu-west-1', // 'eu-central-1', // us-east-1
   domain: 's3-website-test-' + Math.random().toString(16).slice(2),
   routes: [{
     Condition: {
@@ -56,10 +56,33 @@ test('upload content', function (t) {
     if (err) cleanup(config.domain)
     t.error(err, 'website uploaded')
     supertest(website.url).get('/test-upload.html')
+      .expect(200)
+      .expect('content-type', /html/)
+      .expect(/Howdy/)
+      .end(t.end)
+  })
+})
+
+test('leave s3 files that are missing locally', function (t) {
+  config.deleteUnmatchedS3Files = false
+  config.uploadDir = './test/fixtures-more-files'
+  config.deploy = true
+  config.index = 'test-upload.html'
+
+  // Check if content from upload directory exists
+  s3site(config, function (err, website) {
+    if (err) cleanup(config.domain)
+    t.error(err, 'website uploaded')
+    config.uploadDir = './test/fixtures'
+    s3site(config, function (err, website) {
+      config.deleteUnmatchedS3Files = true
+      t.error(err, 'website uploaded again')
+      supertest(website.url).get('/test-upload-v1.html')
         .expect(200)
         .expect('content-type', /html/)
         .expect(/Howdy/)
         .end(t.end)
+    })
   })
 })
 
