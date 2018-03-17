@@ -5,7 +5,7 @@ var s3Utils = require('../').utils
 var AWS = require('aws-sdk')
 
 var config = {
-  region: 'eu-west-1', // 'eu-central-1', // us-east-1
+  region: 'eu-central-1', // us-east-1
   domain: 's3-website-test-' + Math.random().toString(16).slice(2),
   routes: [{
     Condition: {
