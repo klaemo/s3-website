@@ -563,17 +563,19 @@ function putWebsiteContent (s3, config, cb) {
     }
 
     // Delete files that exist on s3, but not locally
-    chunkedAction(
-      s3,
-      config,
-      deleteFiles,
-      config.deleteUnmatchedS3Files ? data.missing : [],
-      function(err, eTags, result) {
-        if (err) { console.error(err) }
-        results.removed = results.removed.concat(result.done)
-        results.errors = results.errors.concat(result.errors)
-        checkDone(data, results, handleRetry)
-      })
+    if (config.deleteUnmatchedS3Files) {
+      chunkedAction(
+        s3,
+        config,
+        deleteFiles,
+        data.missing,
+        function(err, eTags, result) {
+          if (err) { console.error(err) }
+          results.removed = results.removed.concat(result.done)
+          results.errors = results.errors.concat(result.errors)
+          checkDone(data, results, handleRetry)
+        })
+    }
 
     // Upload changed files
     chunkedAction(
