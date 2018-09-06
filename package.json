@@ -1,19 +1,18 @@
 {
-  "name": "s3-website",
-  "version": "3.2.2",
+  "name": "@rlyle1179/s3-website",
+  "version": "3.2.3",
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
   "scripts": {
     "test": "node test/index.js | faucet",
-    "lint": "snazzy",
-    "prepublish": "npm prune && npm ls && npm run lint && npm test"
+    "prepublish": "npm prune && npm ls"
   },
   "bin": {
     "s3-website": "./s3-website.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/klaemo/s3-website"
+    "url": "https://github.com/rlyle/s3-website"
   },
   "keywords": [
     "s3",
@@ -25,12 +24,12 @@
   "author": "Clemens Stolle <klaemo@fastmail.fm>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/klaemo/s3-website/issues"
+    "url": "https://github.com/rlyle/s3-website/issues"
   },
-  "homepage": "https://github.com/klaemo/s3-website",
+  "homepage": "https://github.com/rlyle/s3-website",
   "dependencies": {
     "aws-sdk": "^2.6.12",
-    "cloudfront-tls": "^1.0.0",
+    "@rlyle1179/cloudfront-tls": "^1.0.1",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "console.table": "^0.7.0",
