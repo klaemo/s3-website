@@ -30,7 +30,7 @@
   "homepage": "https://github.com/klaemo/s3-website",
   "dependencies": {
     "aws-sdk": "^2.6.12",
-    "cloudfront-tls": "^1.0.0",
+    "cloudfront-tls": "github:mapseed/cloudfront-tls#d9c972ce83afd196e0447232b83d7cd89dfe6889",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "console.table": "^0.7.0",
