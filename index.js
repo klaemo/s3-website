@@ -10,7 +10,7 @@ var assign = require('object-assign')
 var fs = require('graceful-fs')
 var mime = require('mime')
 require('dotenv').config({ silent: true })
-var s3diff = require('s3-diff')
+var s3diff = require('@rlyle1179/s3-diff')
 var wildcard = require('wildcard')
 var logUpdate = require('log-update')
 var array = require('lodash/array')
@@ -523,7 +523,8 @@ function putWebsiteContent (s3, config, cb) {
       bucket: config.domain,
       prefix: config.prefix
     },
-    recursive: true
+    recursive: true,
+    globOpts: { dot: true }
   }, function (err, data) {
     if (err) return cb(err)
 
