@@ -23,7 +23,8 @@ var defaultConfig = {
   exclude: [],
   corsConfiguration: [],
   enableCloudfront: false,
-  retries: 20
+  retries: 20,
+  gzippedFiles: []
 }
 
 var templateConfig = Object.assign({},
@@ -187,7 +188,8 @@ function uploadFile (s3, config, file, cb) {
     Key: normalizeKey(config.prefix, file),
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: contentType || mime.lookup(file),
-    CacheControl: (config.cacheControl != null) ? config.cacheControl : null
+    CacheControl: (config.cacheControl != null) ? config.cacheControl : null,
+    ContentEncoding: config.gzippedFiles.includes(file) ? "gzip" : null
   }
 
   logUpdate('Uploading: ' + file)
