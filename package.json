@@ -1,6 +1,6 @@
 {
   "name": "@rlyle1179/s3-website",
-  "version": "3.2.4",
+  "version": "3.2.5",
   "description": "Easily publish static websites on Amazon S3",
   "main": "index.js",
   "scripts": {
