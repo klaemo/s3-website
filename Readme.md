@@ -1,4 +1,4 @@
-## s3-website
+## s3-website - An Amazing Project
 
 Easily publish static websites to Amazon S3. TLS encryption can be enabled via Cloudfront.
 
