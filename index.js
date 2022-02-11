@@ -14,6 +14,7 @@ var s3diff = require('s3-diff')
 var wildcard = require('wildcard')
 var logUpdate = require('log-update')
 var array = require('lodash/array')
+var zlib = require('zlib')
 
 var defaultConfig = {
   index: 'index.html',
@@ -23,7 +24,8 @@ var defaultConfig = {
   exclude: [],
   corsConfiguration: [],
   enableCloudfront: false,
-  retries: 20
+  retries: 20,
+  gzip: false
 }
 
 var templateConfig = Object.assign({},
@@ -178,6 +180,10 @@ function getExtension (file) {
   return spl.length > 0 && spl[spl.length - 1]
 }
 
+function needsEncodingHeader(config, file) {
+  return config.gzip && rightExtensionForGzip(file)
+}
+
 function uploadFile (s3, config, file, cb) {
   const ext = getExtension(file)
   const contentType = config.contentTypes && config.contentTypes[ext]
@@ -188,6 +194,10 @@ function uploadFile (s3, config, file, cb) {
     Body: fs.createReadStream(path.join(config.uploadDir, file)),
     ContentType: contentType || mime.lookup(file),
     CacheControl: (config.cacheControl != null) ? config.cacheControl : null
+  }
+
+  if (needsEncodingHeader(config, file)) {
+    params.ContentEncoding = 'gzip'
   }
 
   logUpdate('Uploading: ' + file)
@@ -509,10 +519,61 @@ function uploadFiles (s3, config, files, cb, results = {done: [], errors: []}) {
   sequentially(s3, config, uploadFile, files, cb)
 }
 
+function walkSync (dir) {
+    if (!fs.lstatSync(dir).isDirectory()) return dir
+
+    return fs.readdirSync(dir).map(function(f) {
+      return walkSync(path.join(dir, f))
+    })
+}
+
+function flatten (arr) {
+  return arr.reduce(function (flat, toFlatten) {
+    return flat.concat(Array.isArray(toFlatten) ? flatten(toFlatten) : toFlatten)
+  }, [])
+}
+
+function rightExtensionForGzip (filename) {
+  return filename.endsWith('.js') || filename.endsWith('.html') || filename.endsWith('.css')
+}
+
+function compressFile (filename) {
+  if (!rightExtensionForGzip(filename)) {
+    return
+  }
+
+    var compress = zlib.createGzip()
+    var input = fs.createReadStream(filename)
+    var output = fs.createWriteStream(filename + '.gz')
+
+    var throwOnError = function(error) {
+      if (error) {
+        throw error
+      }
+    }
+
+    input.pipe(compress).pipe(output)
+    fs.unlink(filename, throwOnError)
+    fs.rename(filename + '.gz', filename, throwOnError)
+}
+
+function compressDir (dir) {
+  if (path.resolve(dir).includes('node_modules')) {
+    dir = __dirname + '/../../' + dir
+  }
+  var files = walkSync(dir)
+
+  flatten(files).forEach(compressFile)
+}
+
 function putWebsiteContent (s3, config, cb) {
   if (typeof cb !== 'function') { cb = function () {} }
 
   config = defaults(config, defaultConfig)
+
+  if (config.gzip) {
+    compressDir(config.uploadDir)
+  }
 
   s3diff({
     aws: {
